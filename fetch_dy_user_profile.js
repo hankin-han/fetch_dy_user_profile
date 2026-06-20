@@ -275,13 +275,15 @@ th.sort-active .sort-icon{opacity:1 !important}
 #dy-drawer-wrap.dark-mode .export-dropdown-item{color:#e5e5e5}
 #dy-drawer-wrap.dark-mode .export-dropdown-item:hover{background:#3a3a3a;color:#fe2c55}
 #dy-drawer-wrap.dark-mode .export-dropdown-item:active{background:#4a2020}
-.view-toggle-group{display:flex;border:1px solid #e8e8e8;border-radius:8px;overflow:hidden;background:#fff}
-.view-toggle-btn{padding:8px 10px;border:none;background:transparent;cursor:pointer;color:#999;transition:all 0.2s;display:flex;align-items:center;justify-content:center;line-height:1}
-.view-toggle-btn:hover{background:#f5f6f7;color:#333}
-.view-toggle-btn.active{background:#fe2c55;color:#fff}
-#dy-drawer-wrap.dark-mode .view-toggle-group{border-color:#404040;background:#2d2d2d}
-#dy-drawer-wrap.dark-mode .view-toggle-btn{color:#888}
-#dy-drawer-wrap.dark-mode .view-toggle-btn:hover{background:#3a3a3a;color:#e5e5e5}
+.view-switch-menu{position:absolute;top:100%;left:0;margin-top:4px;background:white;border:1px solid #e8e8e8;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);padding:8px 0;min-width:140px;z-index:100001;display:none}
+.view-switch-menu.show{display:block}
+.view-switch-item{display:flex;align-items:center;gap:8px;padding:8px 16px;cursor:pointer;font-size:14px;color:#333;transition:background 0.15s}
+.view-switch-item:hover{background:#f5f6f7}
+.view-switch-item.active{color:#fe2c55;font-weight:500}
+#dy-drawer-wrap.dark-mode .view-switch-menu{background:#2d2d2d;border-color:#404040}
+#dy-drawer-wrap.dark-mode .view-switch-item{color:#e5e5e5}
+#dy-drawer-wrap.dark-mode .view-switch-item:hover{background:#3a3a3a}
+#dy-drawer-wrap.dark-mode .view-switch-item.active{color:#fe2c55}
 .grid-view-container{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;padding:12px}
 .grid-card{background:#fff;border-radius:10px;overflow:hidden;border:1px solid #e8e8e8;transition:all 0.2s;cursor:pointer;position:relative}
 .grid-card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,0.1);border-color:#fe2c55}
@@ -461,6 +463,36 @@ to{transform:translateY(-4px)}
                     </div>
                 </div>
                 
+                <!-- 视图切换 -->
+                <div class="relative" id="viewSwitchWrapper">
+                    <button id="viewSwitchBtn" class="flex items-center gap-2 bg-dy-bg hover:bg-gray-200 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 btn-press border border-dy-border">
+                        <svg class="w-4 h-4 view-switch-icon-table" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                        </svg>
+                        <svg class="w-4 h-4 view-switch-icon-grid" style="display:none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                        </svg>
+                        <span id="viewSwitchLabel">表格视图</span>
+                        <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div class="view-switch-menu" id="viewSwitchMenu">
+                        <div class="view-switch-item" id="viewTableBtn" data-view="table">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                            </svg>
+                            表格视图
+                        </div>
+                        <div class="view-switch-item" id="viewGridBtn" data-view="grid">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                            </svg>
+                            网格视图
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 列选项按钮 -->
                 <div class="relative" id="columnOptionsWrapper">
                     <button id="columnOptionsBtn" class="flex items-center gap-2 bg-dy-bg hover:bg-gray-200 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 btn-press border border-dy-border">
@@ -515,20 +547,6 @@ to{transform:translateY(-4px)}
                             <label for="col-operation">操作</label>
                         </div>
                     </div>
-                </div>
-
-                <!-- 视图切换 -->
-                <div class="view-toggle-group" id="viewToggleGroup">
-                    <button id="viewTableBtn" class="view-toggle-btn active" title="表格视图">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                        </svg>
-                    </button>
-                    <button id="viewGridBtn" class="view-toggle-btn" title="网格视图">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
-                        </svg>
-                    </button>
                 </div>
 
                 <!-- 搜索框移到右侧 -->
@@ -707,9 +725,29 @@ to{transform:translateY(-4px)}
         // 初始化视图模式
         switchView(currentView);
 
-        // 视图切换按钮
-        document.getElementById("viewTableBtn").onclick = () => switchView('table');
-        document.getElementById("viewGridBtn").onclick = () => switchView('grid');
+        // 视图切换下拉菜单
+        const viewSwitchBtn = document.getElementById("viewSwitchBtn");
+        const viewSwitchMenu = document.getElementById("viewSwitchMenu");
+
+        viewSwitchBtn.onclick = (e) => {
+            e.stopPropagation();
+            viewSwitchMenu.classList.toggle("show");
+        };
+
+        // 点击页面其他地方关闭视图菜单
+        document.addEventListener("click", (e) => {
+            const wrapper = document.getElementById("viewSwitchWrapper");
+            if (wrapper && !wrapper.contains(e.target)) {
+                viewSwitchMenu.classList.remove("show");
+            }
+        });
+
+        viewSwitchMenu.querySelectorAll(".view-switch-item").forEach(item => {
+            item.onclick = () => {
+                switchView(item.dataset.view);
+                viewSwitchMenu.classList.remove("show");
+            };
+        });
 
         // 抽屉开关
         btn.onclick = () => wrap.classList.toggle("open");
@@ -1176,7 +1214,8 @@ to{transform:translateY(-4px)}
                 <div class="flex-1">
                     <div class="flex items-center gap-3 mb-2">
                         <h4 class="text-base font-semibold text-dy-text m-0">${user.nickname}</h4>
-                        <span class="text-xs text-dy-text-secondary bg-dy-bg px-2 py-0.5 rounded font-mono" title="${user.sec_uid}" style="word-break: break-all;line-height: 1.4;">ID: ${user.sec_uid}</span>
+                        <span class="text-xs text-dy-text-secondary bg-dy-bg px-2 py-0.5 rounded font-mono" title="${user.sec_uid}" style="word-break: break-all;line-height: 1.4;">用户ID: ${user.sec_uid}</span>
+                        <button class="action-btn data" id="userDataBtn">json原数据</button>
                     </div>
                     <p class="text-sm text-dy-text-secondary mb-2">${user.signature || "这个人很懒，还没有签名~"}</p>
                     <div class="flex items-center gap-6 text-sm">
@@ -1215,7 +1254,6 @@ to{transform:translateY(-4px)}
                             </svg>
                             <span class="text-dy-text-secondary">IP属地</span>
                             <span class="font-semibold text-dy-text">${user.ip_location || user.ip_attr || user.region || user.address || user.city || "未知"}</span>
-                            <button class="action-btn data" id="userDataBtn">数据</button>
                         </span>
                     </div>
                 </div>
@@ -1240,9 +1278,16 @@ to{transform:translateY(-4px)}
             wrap.classList.remove('table-view', 'grid-view');
             wrap.classList.add(view === 'table' ? 'table-view' : 'grid-view');
         }
-        // 更新按钮状态
-        document.getElementById('viewTableBtn')?.classList.toggle('active', view === 'table');
-        document.getElementById('viewGridBtn')?.classList.toggle('active', view === 'grid');
+        // 更新下拉菜单选中状态和按钮显示
+        document.querySelectorAll('#viewSwitchMenu .view-switch-item').forEach(item => {
+            item.classList.toggle('active', item.dataset.view === view);
+        });
+        const labelEl = document.getElementById('viewSwitchLabel');
+        const iconTable = document.querySelector('.view-switch-icon-table');
+        const iconGrid = document.querySelector('.view-switch-icon-grid');
+        if (labelEl) labelEl.textContent = view === 'table' ? '表格视图' : '网格视图';
+        if (iconTable) iconTable.style.display = view === 'table' ? '' : 'none';
+        if (iconGrid) iconGrid.style.display = view === 'grid' ? '' : 'none';
         renderTable();
     }
 
@@ -1451,7 +1496,7 @@ to{transform:translateY(-4px)}
                     <td class="border-b border-dy-border px-3 py-3 text-center font-medium text-dy-text collect_count" data-col="collect_count">${formatNumber(stats.collect_count || 0)}</td>
                     <td class="border-b border-dy-border px-3 py-3 text-center font-medium text-dy-text promote_count" data-col="promote_count">${formatNumber(promoteCount)}</td>
                     <td class="border-b border-dy-border px-3 py-3 text-center" data-col="operation">
-                        <button class="action-btn data" data-aid="${aid}" data-action="data">数据</button>
+                        <button class="action-btn data" data-aid="${aid}" data-action="data" title="json原数据">数据</button>
                         <button class="action-btn delete" data-aid="${aid}" data-action="delete">删除</button>
                     </td>
                 `;
