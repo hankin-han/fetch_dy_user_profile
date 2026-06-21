@@ -69,7 +69,7 @@
         comment_count: true,
         collect_count: true,
         promote_count: true,
-        operation: true
+        operation: false
     };
 
     // ============================================================
@@ -336,11 +336,18 @@ th[data-col="operation"],td[data-col="operation"]{min-width:140px;width:140px;te
 .action-btn.delete:hover{background:#ffd1d9}
 .action-btn.data{color:#1677ff;border-color:#d1e9ff;background:#f0f7ff}
 .action-btn.data:hover{background:#d1e9ff}
+.action-btn.download{color:#16a34a;border-color:#d1fae5;background:#f0fdf4}
+.action-btn.download:hover{background:#d1fae5}
+.action-btn.download:disabled{opacity:0.5;cursor:not-allowed}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.action-btn-spinner{display:inline-block;width:12px;height:12px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;vertical-align:middle;margin-right:3px}
 #dy-drawer-wrap.dark-mode .action-btn{background:#2d2d2d;border-color:#404040;color:#e5e5e5}
 #dy-drawer-wrap.dark-mode .action-btn.delete{color:#ff6b81;background:#3d2d2d;border-color:#5d4040}
 #dy-drawer-wrap.dark-mode .action-btn.delete:hover{background:#5d4040}
 #dy-drawer-wrap.dark-mode .action-btn.data{color:#4fa3ff;background:#2d3d4d;border-color:#405060}
 #dy-drawer-wrap.dark-mode .action-btn.data:hover{background:#405060}
+#dy-drawer-wrap.dark-mode .action-btn.download{color:#4ade80;background:#1a3d2d;border-color:#2d5d40}
+#dy-drawer-wrap.dark-mode .action-btn.download:hover{background:#2d5d40}
 #dy-drawer-wrap.dark-mode td[data-col="type"] .bg-purple-50{background-color:#2d1a3d !important;color:#c084fc !important}
 #dy-drawer-wrap.dark-mode td[data-col="type"] .bg-blue-50{background-color:#1a2a3d !important;color:#93c5fd !important}
 .json-modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:100002;display:none;align-items:center;justify-content:center;padding:20px}
@@ -571,7 +578,7 @@ to{transform:translateY(-4px)}
                             <label for="col-promote">推荐</label>
                         </div>
                         <div class="column-option-item">
-                            <input type="checkbox" id="col-operation" checked data-col="operation">
+                            <input type="checkbox" id="col-operation" data-col="operation">
                             <label for="col-operation">操作</label>
                         </div>
                     </div>
@@ -1551,6 +1558,7 @@ to{transform:translateY(-4px)}
                     <td class="border-b border-dy-border px-3 py-3 text-center font-medium text-dy-text promote_count" data-col="promote_count">${formatNumber(promoteCount)}</td>
                     <td class="border-b border-dy-border px-3 py-3 text-center" data-col="operation">
                         <button class="action-btn data" data-aid="${aid}" data-action="data" title="json原数据">数据</button>
+                        ${isVideo ? `<button class="action-btn download" data-aid="${aid}" data-action="download" title="下载视频">下载</button>` : ''}
                         <button class="action-btn delete" data-aid="${aid}" data-action="delete">删除</button>
                     </td>
                 `;
@@ -1583,9 +1591,9 @@ to{transform:translateY(-4px)}
             };
         });
 
-        // 操作按钮事件（数据 / 删除）
+        // 操作按钮事件（数据 / 下载 / 删除）
         tbody.querySelectorAll(".action-btn").forEach(btn => {
-            btn.onclick = (e) => {
+            btn.onclick = async (e) => {
                 e.stopPropagation();
                 const aid = btn.dataset.aid;
                 const action = btn.dataset.action;
@@ -1594,6 +1602,24 @@ to{transform:translateY(-4px)}
                 } else if (action === "data") {
                     const item = allWorksList.find(i => String(i.aweme_id) === aid);
                     if (item) showJsonModal(item, `作品数据 - ${aid}`);
+                } else if (action === "download") {
+                    const item = allWorksList.find(i => String(i.aweme_id) === aid);
+                    if (!item) return;
+                    btn.disabled = true;
+                    btn.innerHTML = `<span class="action-btn-spinner"></span>下载中`;
+                    try {
+                        const result = await fetchVideoBlob(item);
+                        if (result) {
+                            triggerDownload(result.blob, result.filename);
+                        } else {
+                            alert(`视频下载失败：${item.desc || aid}\n请查看控制台日志了解详情。`);
+                        }
+                    } catch (err) {
+                        console.error("[下载视频] 异常：", err);
+                        alert(`下载出错：${err.message}`);
+                    }
+                    btn.disabled = false;
+                    btn.innerHTML = "下载";
                 }
             };
         });
