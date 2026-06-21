@@ -184,6 +184,11 @@
         fflateScript.src = "https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js";
         document.head.appendChild(fflateScript);
 
+        // 引入 Chart.js（统计图表，用于仪表盘）
+        const chartJsScript = document.createElement("script");
+        chartJsScript.src = "https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js";
+        document.head.appendChild(chartJsScript);
+
         // 自定义Tailwind配置 —— 需等待 tailwind 脚本加载完成后才能设置
         const customConfig = document.createElement("script");
         customConfig.textContent = `
@@ -290,6 +295,7 @@ th.sort-active .sort-icon{opacity:1 !important}
 #dy-drawer-wrap.dark-mode .view-switch-item{color:#e5e5e5}
 #dy-drawer-wrap.dark-mode .view-switch-item:hover{background:#3a3a3a}
 #dy-drawer-wrap.dark-mode .view-switch-item.active{color:#fe2c55}
+#dy-drawer-wrap.dark-mode .view-switch-divider{background:#404040 !important}
 .grid-view-container{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;padding:12px}
 .grid-card{background:#fff;border-radius:10px;overflow:hidden;border:1px solid #e8e8e8;transition:all 0.2s;cursor:pointer;position:relative}
 .grid-card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,0.1);border-color:#fe2c55}
@@ -418,6 +424,109 @@ to{transform:translateY(-4px)}
 .export-video-btn.primary{background:#fe2c55;color:#fff;border-color:#fe2c55}
 .export-video-btn.primary:hover{background:#e5264c}
 .export-video-btn:disabled{opacity:0.5;cursor:not-allowed}
+/* ====== 仪表盘视图 ====== */
+.dashboard-container{display:none;flex:1;overflow:auto;padding:16px 24px;background:#f5f6f7}
+#dy-drawer-wrap.dark-mode .dashboard-container{background:#1a1a1a}
+#dy-drawer-wrap.dashboard-view .dashboard-container{display:block}
+#dy-drawer-wrap.dashboard-view #workTable{display:none}
+#dy-drawer-wrap.dashboard-view .grid-view-container{display:none}
+#dy-drawer-wrap.dashboard-view #columnOptionsWrapper{display:none}
+.dash-summary-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+.dash-card{background:#fff;border-radius:10px;padding:16px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.06);transition:transform 0.15s}
+.dash-card:hover{transform:translateY(-2px)}
+#dy-drawer-wrap.dark-mode .dash-card{background:#2d2d2d;box-shadow:0 1px 4px rgba(0,0,0,0.3)}
+.dash-card-value{font-size:24px;font-weight:700;color:#1a1a1a;line-height:1.2}
+#dy-drawer-wrap.dark-mode .dash-card-value{color:#e5e5e5}
+.dash-card-label{font-size:12px;color:#999;margin-top:4px}
+.dash-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.dash-section{background:#fff;border-radius:10px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+#dy-drawer-wrap.dark-mode .dash-section{background:#2d2d2d;box-shadow:0 1px 4px rgba(0,0,0,0.3)}
+.dash-section-title{font-size:14px;font-weight:600;color:#1a1a1a;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #eee}
+#dy-drawer-wrap.dark-mode .dash-section-title{color:#e5e5e5;border-color:#404040}
+.dash-rank-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f5f5f5;font-size:12px}
+#dy-drawer-wrap.dark-mode .dash-rank-item{border-color:#3a3a3a}
+.dash-rank-item:last-child{border-bottom:none}
+.dash-rank-num{width:20px;text-align:center;font-weight:700;color:#999;flex-shrink:0}
+.dash-rank-num.top3{color:#fe2c55}
+.dash-rank-cover{width:32px;height:42px;border-radius:4px;object-fit:cover;flex-shrink:0;background:#eee}
+.dash-rank-info{flex:1;min-width:0;overflow:hidden}
+.dash-rank-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#333;line-height:1.3}
+#dy-drawer-wrap.dark-mode .dash-rank-title{color:#e5e5e5}
+.dash-rank-val{color:#999;font-size:11px;margin-top:2px}
+.dash-dist-item{display:flex;align-items:center;padding:10px 0;gap:12px}
+.dash-dist-icon{font-size:20px;flex-shrink:0}
+.dash-dist-info{flex:1}
+.dash-dist-name{font-size:13px;font-weight:500;color:#333}
+#dy-drawer-wrap.dark-mode .dash-dist-name{color:#e5e5e5}
+.dash-dist-detail{font-size:11px;color:#999;margin-top:2px}
+.dash-dist-bar-wrap{flex:1;min-width:60px;height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden;align-self:center}
+#dy-drawer-wrap.dark-mode .dash-dist-bar-wrap{background:#404040}
+.dash-dist-bar{height:100%;border-radius:3px;transition:width .4s ease}
+.dash-dist-bar.video{background:linear-gradient(90deg,#fe2c55,#ff6b81)}
+.dash-dist-bar.image{background:linear-gradient(90deg,#4fa3ff,#7fc4ff)}
+.dash-dist-pct{font-size:12px;font-weight:600;color:#333;flex-shrink:0;text-align:right;min-width:36px}
+#dy-drawer-wrap.dark-mode .dash-dist-pct{color:#e5e5e5}
+/* ====== 仪表盘图表容器 ====== */
+.dash-chart-wrap{position:relative;width:100%}
+.dash-chart-wrap-pie{max-width:220px;margin:0 auto}
+.dash-chart-wrap-bar{height:220px}
+.dash-chart-wrap-hbar{height:360px}
+.dash-section-full{grid-column:1/-1}
+/* ====== 对比视图 ====== */
+.compare-container{display:none;flex:1;overflow:auto;padding:20px 24px;background:#f5f6f7}
+#dy-drawer-wrap.dark-mode .compare-container{background:#1a1a1a}
+#dy-drawer-wrap.compare-view .compare-container{display:block}
+#dy-drawer-wrap.compare-view #workTable{display:none}
+#dy-drawer-wrap.compare-view .grid-view-container{display:none}
+#dy-drawer-wrap.compare-view #columnOptionsWrapper{display:none}
+.compare-header{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.compare-card{flex:1;min-width:140px;max-width:220px;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06);text-align:center}
+#dy-drawer-wrap.dark-mode .compare-card{background:#2d2d2d}
+.compare-card-cover{width:100%;aspect-ratio:9/16;object-fit:cover;background:#eee}
+.compare-card-title{font-size:12px;color:#333;padding:8px;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#dy-drawer-wrap.dark-mode .compare-card-title{color:#e5e5e5}
+.compare-no-select{text-align:center;padding:80px 20px;color:#999;font-size:14px}
+.compare-table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+#dy-drawer-wrap.dark-mode .compare-table{background:#2d2d2d}
+.compare-table th,.compare-table td{padding:10px 14px;text-align:center;font-size:13px;border-bottom:1px solid #eee}
+#dy-drawer-wrap.dark-mode .compare-table th,#dy-drawer-wrap.dark-mode .compare-table td{border-color:#404040}
+.compare-table th{background:#fafafa;font-weight:600;color:#666;white-space:nowrap}
+#dy-drawer-wrap.dark-mode .compare-table th{background:#333;color:#aaa}
+.compare-table tr:hover td{background:#fafafa}
+#dy-drawer-wrap.dark-mode .compare-table tr:hover td{background:#333}
+.compare-metric{text-align:left;font-weight:500;color:#333;white-space:nowrap}
+#dy-drawer-wrap.dark-mode .compare-metric{color:#e5e5e5}
+.compare-highlight{color:#fe2c55;font-weight:700;position:relative}
+.compare-highlight::after{content:'👑';font-size:10px;position:absolute;top:-8px;left:50%;transform:translateX(-50%)}
+/* ====== 时间线视图 ====== */
+.timeline-container{display:none;flex:1;overflow:auto;padding:20px 28px;background:#f5f6f7}
+#dy-drawer-wrap.dark-mode .timeline-container{background:#1a1a1a}
+#dy-drawer-wrap.timeline-view .timeline-container{display:block}
+#dy-drawer-wrap.timeline-view #workTable{display:none}
+#dy-drawer-wrap.timeline-view .grid-view-container{display:none}
+#dy-drawer-wrap.timeline-view #columnOptionsWrapper{display:none}
+.timeline-month-group{margin-bottom:24px}
+.timeline-month-header{display:flex;align-items:center;gap:12px;margin-bottom:12px;padding:10px 16px;background:#fff;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
+#dy-drawer-wrap.dark-mode .timeline-month-header{background:#2d2d2d}
+.timeline-month-label{font-size:15px;font-weight:700;color:#1a1a1a}
+#dy-drawer-wrap.dark-mode .timeline-month-label{color:#e5e5e5}
+.timeline-month-stats{font-size:12px;color:#999;margin-left:auto}
+.timeline-list{position:relative;padding-left:28px}
+.timeline-list::before{content:'';position:absolute;left:10px;top:4px;bottom:4px;width:2px;background:#e0e0e0;border-radius:1px}
+#dy-drawer-wrap.dark-mode .timeline-list::before{background:#404040}
+.timeline-item{position:relative;display:flex;align-items:flex-start;gap:12px;padding:10px 14px;margin-bottom:8px;background:#fff;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.05);transition:box-shadow 0.15s}
+.timeline-item:hover{box-shadow:0 2px 8px rgba(0,0,0,0.1)}
+#dy-drawer-wrap.dark-mode .timeline-item{background:#2d2d2d}
+#dy-drawer-wrap.dark-mode .timeline-item:hover{box-shadow:0 2px 8px rgba(0,0,0,0.4)}
+.timeline-dot{position:absolute;left:-22px;top:14px;width:10px;height:10px;border-radius:50%;background:#fe2c55;border:2px solid #fff;flex-shrink:0;z-index:1}
+#dy-drawer-wrap.dark-mode .timeline-dot{border-color:#2d2d2d}
+.timeline-thumb{width:56px;height:74px;border-radius:4px;object-fit:cover;flex-shrink:0;background:#eee}
+.timeline-info{flex:1;min-width:0}
+.timeline-time{font-size:11px;color:#999;margin-bottom:2px}
+.timeline-title{font-size:13px;color:#333;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:6px}
+#dy-drawer-wrap.dark-mode .timeline-title{color:#e5e5e5}
+.timeline-stats{display:flex;gap:10px;font-size:11px;color:#999}
+.timeline-stat{display:flex;align-items:center;gap:2px}
         `;
         document.head.appendChild(style);
 
@@ -507,6 +616,15 @@ to{transform:translateY(-4px)}
                         <svg class="w-4 h-4 view-switch-icon-grid" style="display:none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
                         </svg>
+                        <svg class="w-4 h-4 view-switch-icon-dashboard" style="display:none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                        <svg class="w-4 h-4 view-switch-icon-compare" style="display:none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path>
+                        </svg>
+                        <svg class="w-4 h-4 view-switch-icon-timeline" style="display:none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
                         <span id="viewSwitchLabel">表格视图</span>
                         <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -524,6 +642,25 @@ to{transform:translateY(-4px)}
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
                             </svg>
                             网格视图
+                        </div>
+                        <div class="view-switch-divider" style="height:1px;background:#eee;margin:4px 12px"></div>
+                        <div class="view-switch-item" id="viewDashboardBtn" data-view="dashboard">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                            仪表盘
+                        </div>
+                        <div class="view-switch-item" id="viewCompareBtn" data-view="compare">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path>
+                            </svg>
+                            对比视图
+                        </div>
+                        <div class="view-switch-item" id="viewTimelineBtn" data-view="timeline">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            时间线
                         </div>
                     </div>
                 </div>
@@ -681,6 +818,15 @@ to{transform:translateY(-4px)}
 
                 <!-- 网格视图容器 -->
                 <div class="grid-view-container" id="gridViewContainer"></div>
+
+                <!-- 仪表盘容器 -->
+                <div class="dashboard-container" id="dashboardContainer"></div>
+
+                <!-- 对比视图容器 -->
+                <div class="compare-container" id="compareContainer"></div>
+
+                <!-- 时间线容器 -->
+                <div class="timeline-container" id="timelineContainer"></div>
             </div>
 
             <!-- 分页栏 -->
@@ -1339,27 +1485,373 @@ to{transform:translateY(-4px)}
     }
 
     /**
-     * 切换表格/网格视图，状态持久化到 localStorage
-     * @param {'table'|'grid'} view - 目标视图模式
+     * 统一更新分页栏显示和按钮状态
+     */
+    function updatePageBar(total, curPage, totalPage, showPager) {
+        const pageBar = document.querySelector('.page-bar');
+        if (pageBar) pageBar.style.display = showPager ? '' : 'none';
+        if (!showPager) return;
+        document.getElementById("totalNum").innerText = total;
+        document.getElementById("totalPageNum").innerText = totalPage;
+        document.getElementById("currentPageShow").innerText = curPage;
+        document.getElementById("pageMaxShow").innerText = totalPage;
+        const prevBtn = document.getElementById("prevPage");
+        const nextBtn = document.getElementById("nextPage");
+        if (prevBtn) {
+            prevBtn.disabled = curPage <= 1;
+            prevBtn.classList.toggle("opacity-50", curPage <= 1);
+            prevBtn.onclick = () => { if (curPage > 1) { currentPage--; renderTable(); } };
+        }
+        if (nextBtn) {
+            nextBtn.disabled = curPage >= totalPage;
+            nextBtn.classList.toggle("opacity-50", curPage >= totalPage);
+            nextBtn.onclick = () => { if (curPage < totalPage) { currentPage++; renderTable(); } };
+        }
+    }
+
+    /**
+     * 渲染仪表盘视图
+     * 数据源：allWorksList 全量，不分页
+     * 展示：概览卡片、类型分布、Top 10 排行榜
+     */
+    function renderDashboard(allData) {
+        const container = document.getElementById("dashboardContainer");
+        if (!container) return;
+
+        // 先销毁旧图表实例，避免 Canvas 残留报错
+        container.querySelectorAll("canvas").forEach(c => {
+            const inst = window.Chart?.getChart?.(c);
+            if (inst) inst.destroy();
+        });
+
+        const data = allData || allWorksList;
+        if (!data.length) {
+            container.innerHTML = '<div style="text-align:center;padding:60px;color:#999;font-size:14px">暂无数据，请先解析作品</div>';
+            return;
+        }
+        let totalLikes = 0, totalComments = 0, totalShares = 0, totalCollects = 0;
+        let videoCount = 0, imageCount = 0;
+        data.forEach(item => {
+            const s = item.statistics || {};
+            totalLikes += s.digg_count || 0;
+            totalComments += s.comment_count || 0;
+            totalShares += s.share_count || 0;
+            totalCollects += s.collect_count || 0;
+            item.images ? imageCount++ : videoCount++;
+        });
+        const avgLikes = data.length ? Math.round(totalLikes / data.length) : 0;
+        const avgComments = data.length ? Math.round(totalComments / data.length) : 0;
+        const avgShares = data.length ? Math.round(totalShares / data.length) : 0;
+        const avgCollects = data.length ? Math.round(totalCollects / data.length) : 0;
+        const rankLikes = [...data].sort((a,b) => (b.statistics?.digg_count||0) - (a.statistics?.digg_count||0)).slice(0,10);
+        const rankComments = [...data].sort((a,b) => (b.statistics?.comment_count||0) - (a.statistics?.comment_count||0)).slice(0,10);
+
+        container.innerHTML =
+            // Row 1: 概览卡片
+            '<div class="dash-summary-cards">'+
+                '<div class="dash-card"><div class="dash-card-value">'+data.length+'</div><div class="dash-card-label">作品总数</div></div>'+
+                '<div class="dash-card"><div class="dash-card-value">'+formatNumber(totalLikes)+'</div><div class="dash-card-label">累计点赞</div></div>'+
+                '<div class="dash-card"><div class="dash-card-value">'+formatNumber(totalComments)+'</div><div class="dash-card-label">累计评论</div></div>'+
+                '<div class="dash-card"><div class="dash-card-value">'+formatNumber(totalShares)+'</div><div class="dash-card-label">累计分享</div></div>'+
+                '<div class="dash-card"><div class="dash-card-value">'+formatNumber(totalCollects)+'</div><div class="dash-card-label">累计收藏</div></div>'+
+            '</div>'+
+            // Row 2: 类型分布 (环形图) + 互动概览 (柱状图)
+            '<div class="dash-row">'+
+                '<div class="dash-section"><div class="dash-section-title">📹 类型分布</div><div class="dash-chart-wrap dash-chart-wrap-pie"><canvas id="dashTypeChart"></canvas></div></div>'+
+                '<div class="dash-section"><div class="dash-section-title">📈 互动均值</div><div class="dash-chart-wrap dash-chart-wrap-bar"><canvas id="dashOverviewChart"></canvas></div></div>'+
+            '</div>'+
+            // Row 3: 点赞 Top 10 (水平柱状图，全宽)
+            '<div class="dash-row">'+
+                '<div class="dash-section dash-section-full"><div class="dash-section-title">🔥 点赞 Top 10</div><div class="dash-chart-wrap dash-chart-wrap-hbar"><canvas id="dashLikesChart"></canvas></div></div>'+
+            '</div>'+
+            // Row 4: 评论 Top 10 (水平柱状图，全宽)
+            '<div class="dash-row">'+
+                '<div class="dash-section dash-section-full"><div class="dash-section-title">💬 评论 Top 10</div><div class="dash-chart-wrap dash-chart-wrap-hbar"><canvas id="dashCommentsChart"></canvas></div></div>'+
+            '</div>';
+
+        // 等待 Chart.js 加载完成后初始化图表
+        waitChartJs().then(() => {
+            const wrap = document.getElementById("dy-drawer-wrap");
+            const isDark = wrap && wrap.classList.contains("dark-mode");
+            const tc = isDark ? "#e5e5e5" : "#333";
+            const gc = isDark ? "#404040" : "#eee";
+
+            // 1. 类型分布 —— 环形图
+            const typeCtx = document.getElementById("dashTypeChart");
+            if (typeCtx) {
+                new window.Chart(typeCtx, {
+                    type: "doughnut",
+                    data: {
+                        labels: ["视频", "图文"],
+                        datasets: [{
+                            data: [videoCount, imageCount],
+                            backgroundColor: ["#fe2c55", "#4fa3ff"],
+                            borderColor: isDark ? "#2d2d2d" : "#fff",
+                            borderWidth: 2,
+                            hoverBorderColor: isDark ? "#3a3a3a" : "#fff"
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        cutout: "55%",
+                        plugins: {
+                            legend: {
+                                position: "bottom",
+                                labels: { color: tc, padding: 16, font: { size: 12 }, usePointStyle: true, pointStyleWidth: 8 }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: ctx => ctx.label + ": " + ctx.parsed + " 条 (" + (data.length ? Math.round(ctx.parsed / data.length * 100) : 0) + "%)"
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 2. 互动均值 —— 柱状图
+            const ovCtx = document.getElementById("dashOverviewChart");
+            if (ovCtx) {
+                new window.Chart(ovCtx, {
+                    type: "bar",
+                    data: {
+                        labels: ["点赞", "评论", "分享", "收藏"],
+                        datasets: [{
+                            data: [avgLikes, avgComments, avgShares, avgCollects],
+                            backgroundColor: ["rgba(254,44,85,0.85)", "rgba(79,163,255,0.85)", "rgba(255,193,7,0.85)", "rgba(82,196,26,0.85)"],
+                            borderColor: ["#fe2c55", "#4fa3ff", "#ffc107", "#52c41a"],
+                            borderWidth: 1,
+                            borderRadius: 6,
+                            borderSkipped: false
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: ctx => "平均" + ctx.label + ": " + formatNumber(ctx.parsed.y) + " 条"
+                                }
+                            }
+                        },
+                        scales: {
+                            x: { ticks: { color: tc, font: { size: 12 } }, grid: { display: false } },
+                            y: { beginAtZero: true, ticks: { color: tc, callback: v => formatNumber(v) }, grid: { color: gc } }
+                        }
+                    }
+                });
+            }
+
+            // 3. 点赞 Top 10 —— 水平柱状图
+            (function renderLikesChart() {
+                const ctx = document.getElementById("dashLikesChart");
+                if (!ctx) return;
+                const labels = rankLikes.map((item, i) => (i + 1) + ". " + ((item.desc || "无标题").length > 16 ? (item.desc || "无标题").slice(0, 15) + "…" : (item.desc || "无标题")));
+                const values = rankLikes.map(item => item.statistics?.digg_count || 0);
+                new window.Chart(ctx, {
+                    type: "bar",
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: values,
+                            backgroundColor: values.map((_, i) => i < 3 ? "#fe2c55" : "rgba(254,44,85,0.55)"),
+                            borderWidth: 0,
+                            borderRadius: 4,
+                            borderSkipped: false
+                        }]
+                    },
+                    options: {
+                        indexAxis: "y",
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: { label: ctx => "👍 " + formatNumber(ctx.parsed.x) + " 赞" }
+                            }
+                        },
+                        scales: {
+                            x: { beginAtZero: true, ticks: { color: tc, callback: v => formatNumber(v) }, grid: { color: gc } },
+                            y: { ticks: { color: tc, font: { size: 11 } }, grid: { display: false } }
+                        }
+                    }
+                });
+            })();
+
+            // 4. 评论 Top 10 —— 水平柱状图
+            (function renderCommentsChart() {
+                const ctx = document.getElementById("dashCommentsChart");
+                if (!ctx) return;
+                const labels = rankComments.map((item, i) => (i + 1) + ". " + ((item.desc || "无标题").length > 16 ? (item.desc || "无标题").slice(0, 15) + "…" : (item.desc || "无标题")));
+                const values = rankComments.map(item => item.statistics?.comment_count || 0);
+                new window.Chart(ctx, {
+                    type: "bar",
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: values,
+                            backgroundColor: values.map((_, i) => i < 3 ? "#4fa3ff" : "rgba(79,163,255,0.55)"),
+                            borderWidth: 0,
+                            borderRadius: 4,
+                            borderSkipped: false
+                        }]
+                    },
+                    options: {
+                        indexAxis: "y",
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: { label: ctx => "💬 " + formatNumber(ctx.parsed.x) + " 评论" }
+                            }
+                        },
+                        scales: {
+                            x: { beginAtZero: true, ticks: { color: tc, callback: v => formatNumber(v) }, grid: { color: gc } },
+                            y: { ticks: { color: tc, font: { size: 11 } }, grid: { display: false } }
+                        }
+                    }
+                });
+            })();
+        }).catch(err => {
+            console.error("[仪表盘] Chart.js 初始化失败:", err);
+        });
+    }
+
+    /**
+     * 渲染对比视图
+     * 从 allWorksList 中筛选 selectedIds 勾选的作品（2-6 条）
+     * 并排展示封面卡 + 指标对比表，高亮每项最高值
+     */
+    function renderCompareView() {
+        const container = document.getElementById("compareContainer");
+        if (!container) return;
+        const selected = allWorksList.filter(item => selectedIds.has(String(item.aweme_id)));
+        if (selected.length < 2) {
+            container.innerHTML = '<div class="compare-no-select"><svg style="width:48px;height:48px;color:#ddd;margin-bottom:12px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path></svg><p>请先在表格或网格视图中<b>勾选 2 条以上作品</b>，再切换到对比视图</p></div>';
+            return;
+        }
+        const compareItems = selected.slice(0, 6);
+        const metrics = [
+            { key: 'create_time', label: '发布时间', formatV: item => formatDateTime(item.create_time) },
+            { key: 'type', label: '类型', formatV: item => item.images ? '图文' : '视频' },
+            { key: 'digg_count', label: '👍 点赞', formatV: item => formatNumber(item.statistics?.digg_count||0), num: item => item.statistics?.digg_count||0 },
+            { key: 'comment_count', label: '💬 评论', formatV: item => formatNumber(item.statistics?.comment_count||0), num: item => item.statistics?.comment_count||0 },
+            { key: 'share_count', label: '📤 分享', formatV: item => formatNumber(item.statistics?.share_count||0), num: item => item.statistics?.share_count||0 },
+            { key: 'collect_count', label: '⭐ 收藏', formatV: item => formatNumber(item.statistics?.collect_count||0), num: item => item.statistics?.collect_count||0 },
+        ];
+
+        // 封面卡片
+        let coverCards = '';
+        let tableHead = '<th style="width:100px">指标</th>';
+        compareItems.forEach((item, i) => {
+            const cover = item.video?.cover?.url_list[0] || (item.images?.[0]?.url_list[0] || '');
+            const escTitle = (item.desc || '无标题').replace(/"/g, '&quot;');
+            coverCards += '<div class="compare-card">'+
+                (cover ? '<img class="compare-card-cover" src="'+cover+'" loading="lazy" onerror="this.style.background=\'#eee\'">' : '<div class="compare-card-cover" style="background:#eee;display:flex;align-items:center;justify-content:center;color:#ccc">无封面</div>')+
+                '<div class="compare-card-title" title="'+escTitle+'">#'+(i+1)+' '+(item.desc || '无标题')+'</div></div>';
+            tableHead += '<th>作品 #'+(i+1)+'</th>';
+        });
+
+        // 对比表格
+        let tableRows = '';
+        metrics.forEach(m => {
+            let maxVal = -1;
+            if (m.num) {
+                maxVal = Math.max(...compareItems.map(m.num));
+            }
+            tableRows += '<tr><td class="compare-metric">'+m.label+'</td>';
+            compareItems.forEach((item, i) => {
+                const val = m.formatV(item);
+                const isMax = m.num && m.num(item) === maxVal && maxVal > 0;
+                tableRows += '<td' + (isMax ? ' class="compare-highlight"' : '') + '>'+val+'</td>';
+            });
+            tableRows += '</tr>';
+        });
+
+        container.innerHTML = '<div class="compare-header">'+coverCards+'</div>'+
+            '<table class="compare-table"><thead><tr>'+tableHead+'</tr></thead><tbody>'+tableRows+'</tbody></table>';
+    }
+
+    /**
+     * 渲染时间线视图
+     * 数据源：filterWorks（分页），按月分组展示发布节奏
+     */
+    function renderTimelineView(pageData) {
+        const container = document.getElementById("timelineContainer");
+        if (!container) return;
+        if (!pageData.length) {
+            container.innerHTML = '<div style="text-align:center;padding:60px;color:#999;font-size:14px">暂无匹配数据</div>';
+            return;
+        }
+        const monthGroups = {};
+        pageData.forEach(item => {
+            const d = new Date(item.create_time * 1000);
+            const key = d.getFullYear()+'年'+(d.getMonth()+1)+'月';
+            if (!monthGroups[key]) monthGroups[key] = [];
+            monthGroups[key].push(item);
+        });
+
+        let html = '';
+        for (const [month, items] of Object.entries(monthGroups)) {
+            const totalLikes = items.reduce((s, i) => s + (i.statistics?.digg_count||0), 0);
+            const avgLikes = Math.round(totalLikes / items.length);
+            html += '<div class="timeline-month-group"><div class="timeline-month-header"><span class="timeline-month-label">📅 '+month+'</span>'+
+                '<span class="timeline-month-stats">'+items.length+' 条作品 · 平均点赞 '+formatNumber(avgLikes)+'</span></div><div class="timeline-list">';
+            items.forEach(item => {
+                const cover = item.video?.cover?.url_list[0] || (item.images?.[0]?.url_list[0] || '');
+                const s = item.statistics || {};
+                const isVideo = !item.images;
+                const timeStr = formatDateTime(item.create_time);
+                const escTitle = (item.desc || '无标题').replace(/"/g, '&quot;');
+                html += '<div class="timeline-item"><div class="timeline-dot"></div>'+
+                    (cover ? '<img class="timeline-thumb" src="'+cover+'" loading="lazy" onerror="this.style.background=\'#eee\'">' : '<div class="timeline-thumb" style="background:#eee;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:10px">无封面</div>')+
+                    '<div class="timeline-info"><div class="timeline-time">'+timeStr+' · '+(isVideo?'🎬 视频':'🖼️ 图文')+'</div>'+
+                    '<div class="timeline-title" title="'+escTitle+'">'+(item.desc || '无标题')+'</div>'+
+                    '<div class="timeline-stats"><span class="timeline-stat">👍 '+formatNumber(s.digg_count||0)+'</span>'+
+                    '<span class="timeline-stat">💬 '+formatNumber(s.comment_count||0)+'</span>'+
+                    '<span class="timeline-stat">📤 '+formatNumber(s.share_count||0)+'</span>'+
+                    '<span class="timeline-stat">⭐ '+formatNumber(s.collect_count||0)+'</span></div></div></div>';
+            });
+            html += '</div></div>';
+        }
+        container.innerHTML = html;
+    }
+
+    /**
+     * 切换视图模式，状态持久化到 localStorage
+     * @param {'table'|'grid'|'dashboard'|'compare'|'timeline'} view - 目标视图模式
      */
     function switchView(view) {
         currentView = view;
         localStorage.setItem('dy-drawer-view', view);
         const wrap = document.getElementById('dy-drawer-wrap');
+        const viewClasses = ['table-view', 'grid-view', 'dashboard-view', 'compare-view', 'timeline-view'];
         if (wrap) {
-            wrap.classList.remove('table-view', 'grid-view');
-            wrap.classList.add(view === 'table' ? 'table-view' : 'grid-view');
+            wrap.classList.remove(...viewClasses);
+            wrap.classList.add(view + '-view');
         }
-        // 更新下拉菜单选中状态和按钮显示
+        // 更新下拉菜单选中状态
         document.querySelectorAll('#viewSwitchMenu .view-switch-item').forEach(item => {
             item.classList.toggle('active', item.dataset.view === view);
         });
+        // 更新按钮图标和标签
         const labelEl = document.getElementById('viewSwitchLabel');
-        const iconTable = document.querySelector('.view-switch-icon-table');
-        const iconGrid = document.querySelector('.view-switch-icon-grid');
-        if (labelEl) labelEl.textContent = view === 'table' ? '表格视图' : '网格视图';
-        if (iconTable) iconTable.style.display = view === 'table' ? '' : 'none';
-        if (iconGrid) iconGrid.style.display = view === 'grid' ? '' : 'none';
+        const iconMap = {
+            table: '.view-switch-icon-table',
+            grid: '.view-switch-icon-grid',
+            dashboard: '.view-switch-icon-dashboard',
+            compare: '.view-switch-icon-compare',
+            timeline: '.view-switch-icon-timeline'
+        };
+        const labelMap = { table: '表格视图', grid: '网格视图', dashboard: '仪表盘', compare: '对比视图', timeline: '时间线' };
+        document.querySelectorAll('.view-switch-icon-table,.view-switch-icon-grid,.view-switch-icon-dashboard,.view-switch-icon-compare,.view-switch-icon-timeline').forEach(el => el.style.display = 'none');
+        const activeIcon = document.querySelector(iconMap[view]);
+        if (activeIcon) activeIcon.style.display = '';
+        if (labelEl) labelEl.textContent = labelMap[view] || '表格视图';
         renderTable();
     }
 
@@ -1452,6 +1944,27 @@ to{transform:translateY(-4px)}
         if (currentPage > totalPage) currentPage = totalPage || 1;
         const start = (currentPage - 1) * pageSize;
         const pageData = sortedList.slice(start, start + pageSize);
+
+        // 仪表盘视图（全量数据，不分页）
+        if (currentView === 'dashboard') {
+            renderDashboard();
+            updatePageBar(0, 0, 0, false);
+            return;
+        }
+
+        // 对比视图（选中数据，不分页）
+        if (currentView === 'compare') {
+            renderCompareView();
+            updatePageBar(0, 0, 0, false);
+            return;
+        }
+
+        // 时间线视图（分页）
+        if (currentView === 'timeline') {
+            renderTimelineView(pageData);
+            updatePageBar(total, currentPage, totalPage, true);
+            return;
+        }
 
         // 网格视图委托
         if (currentView === 'grid') {
@@ -2078,6 +2591,18 @@ to{transform:translateY(-4px)}
             waited += 200;
         }
         if (typeof window.fflate === "undefined") throw new Error("fflate 库加载超时，请刷新页面后重试！");
+    }
+
+    /**
+     * 等待 Chart.js 加载完成（上限 10 秒）
+     */
+    async function waitChartJs() {
+        let waited = 0;
+        while (typeof window.Chart === "undefined" && waited < 10000) {
+            await new Promise(r => setTimeout(r, 200));
+            waited += 200;
+        }
+        if (typeof window.Chart === "undefined") throw new Error("Chart.js 库加载超时，请刷新页面后重试！");
     }
 
     /**
