@@ -226,6 +226,8 @@
         // 全局样式（包含深色模式）
         const style = document.createElement("style");
         style.textContent = `
+#dy-drawer-mask{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.25);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:99999;opacity:0;pointer-events:none;transition:opacity 0.35s ease}
+#dy-drawer-mask.show{opacity:1;pointer-events:auto}
 #dy-drawer-wrap{transition:right 0.35s cubic-bezier(0.4,0,0.2,1);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif}
 #dy-drawer-wrap.dark-mode{background-color:#1a1a1a !important;color:#e5e5e5 !important}
 #dy-drawer-wrap.dark-mode .drawer-header,#dy-drawer-wrap.dark-mode .drawer-user-info,#dy-drawer-wrap.dark-mode .drawer-toolbar,#dy-drawer-wrap.dark-mode .page-bar{background-color:#2d2d2d !important;border-color:#404040 !important}
@@ -536,6 +538,11 @@ to{transform:translateY(-4px)}
         btn.className = "fixed right-0 top-1/2 -translate-y-1/2 bg-dy-red text-white border-none px-2.5 py-4 rounded-l-lg cursor-pointer z-[99999] text-xs font-medium hover:bg-dy-red-hover transition-all duration-200 shadow-[0_4px_12px_rgba(254,44,85,0.4)] hover:shadow-[0_6px_16px_rgba(254,44,85,0.5)] btn-press";
         btn.innerHTML = '<span style="writing-mode: vertical-rl; letter-spacing: 2px;">作品数据面板</span>';
         document.body.appendChild(btn);
+
+        // 毛玻璃遮罩层
+        const mask = document.createElement("div");
+        mask.id = "dy-drawer-mask";
+        document.body.appendChild(mask);
 
         // 抽屉容器
         const wrap = document.createElement("div");
@@ -964,8 +971,18 @@ to{transform:translateY(-4px)}
         };
 
         // 抽屉开关
-        btn.onclick = () => wrap.classList.toggle("open");
-        wrap.querySelector(".drawer-close").onclick = () => wrap.classList.remove("open");
+        btn.onclick = () => {
+            const isOpen = wrap.classList.toggle("open");
+            mask.classList.toggle("show", isOpen);
+        };
+        wrap.querySelector(".drawer-close").onclick = () => {
+            wrap.classList.remove("open");
+            mask.classList.remove("show");
+        };
+        mask.onclick = () => {
+            wrap.classList.remove("open");
+            mask.classList.remove("show");
+        };
         
         // 打开类控制
         const styleOpen = document.createElement("style");
@@ -2814,7 +2831,7 @@ to{transform:translateY(-4px)}
             if (el) el.textContent = allWorksList.length;
             renderTable();
         } catch (err) {
-            alert("数据加载失败：" + err.message + "\n刷新页面后重新运行脚本");
+            console.log("数据加载失败：" + err.message + " — 请刷新页面后重新运行脚本");
             console.error(err);
             isLoading = false;
             hideLoadingProgress();
