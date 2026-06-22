@@ -55,12 +55,13 @@
     // 主题状态（从 localStorage 读取，默认浅色）
     let isDarkMode = localStorage.getItem('dy-drawer-theme') === 'dark';
 
-    // 列显示控制（type/author 默认隐藏，需在列选项中勾选才可见）
+    // 列显示控制（type/author/tags 默认隐藏，需在列选项中勾选才可见）
     let columnVisibility = {
         select: true,
         id: true,
         cover: true,
         title: true,
+        tags: false,
         type: false,
         author: false,
         create_time: true,
@@ -380,6 +381,8 @@ th[data-col="operation"],td[data-col="operation"]{min-width:140px;width:140px;te
 #dy-drawer-wrap.dark-mode .action-btn.download:hover{background:#2d5d40}
 #dy-drawer-wrap.dark-mode td[data-col="type"] .bg-purple-50{background-color:#2d1a3d !important;color:#c084fc !important}
 #dy-drawer-wrap.dark-mode td[data-col="type"] .bg-blue-50{background-color:#1a2a3d !important;color:#93c5fd !important}
+#dy-drawer-wrap.dark-mode td[data-col="tags"] .bg-blue-50{background-color:#1a2a3d !important}
+#dy-drawer-wrap.dark-mode td[data-col="tags"] .text-blue-700{color:#93c5fd !important}
 .json-modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:100002;display:none;align-items:center;justify-content:center;padding:20px}
 .json-modal-overlay.show{display:flex}
 .json-modal-content{background:white;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,0.2);width:90%;max-width:900px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden}
@@ -551,6 +554,7 @@ to{transform:translateY(-4px)}
 #dy-drawer-wrap.dark-mode .timeline-title{color:#e5e5e5}
 .timeline-stats{display:flex;gap:10px;font-size:11px;color:#999}
 .timeline-stat{display:flex;align-items:center;gap:2px}
+#dy-drawer-wrap.fullscreen #workTable{table-layout:auto;width:100%}#dy-drawer-wrap.fullscreen th[data-col="title"],#dy-drawer-wrap.fullscreen td[data-col="title"]{width:30%;min-width:300px;max-width:none!important;overflow:visible!important;text-overflow:clip!important}#dy-drawer-wrap.fullscreen td[data-col="title"] span{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;display:block}#dy-drawer-wrap.fullscreen th[data-col="tags"],#dy-drawer-wrap.fullscreen td[data-col="tags"]{width:20%;min-width:180px;max-width:none!important;overflow:visible!important;white-space:normal}#dy-drawer-wrap.fullscreen th[data-col="id"],#dy-drawer-wrap.fullscreen td[data-col="id"]{width:140px}#dy-drawer-wrap.fullscreen th[data-col="cover"],#dy-drawer-wrap.fullscreen td[data-col="cover"]{width:70px}#dy-drawer-wrap.fullscreen th[data-col="type"],#dy-drawer-wrap.fullscreen td[data-col="type"]{width:60px}#dy-drawer-wrap.fullscreen th[data-col="author"],#dy-drawer-wrap.fullscreen td[data-col="author"]{width:100px}#dy-drawer-wrap.fullscreen th[data-col="create_time"],#dy-drawer-wrap.fullscreen td[data-col="create_time"]{width:150px}#dy-drawer-wrap.fullscreen th[data-col="digg_count"],#dy-drawer-wrap.fullscreen td[data-col="digg_count"],#dy-drawer-wrap.fullscreen th[data-col="share_count"],#dy-drawer-wrap.fullscreen td[data-col="share_count"],#dy-drawer-wrap.fullscreen th[data-col="comment_count"],#dy-drawer-wrap.fullscreen td[data-col="comment_count"],#dy-drawer-wrap.fullscreen th[data-col="collect_count"],#dy-drawer-wrap.fullscreen td[data-col="collect_count"],#dy-drawer-wrap.fullscreen th[data-col="promote_count"],#dy-drawer-wrap.fullscreen td[data-col="promote_count"]{width:70px}#dy-drawer-wrap.fullscreen th[data-col="operation"],#dy-drawer-wrap.fullscreen td[data-col="operation"]{width:110px}
         `;
         document.head.appendChild(style);
 
@@ -723,6 +727,10 @@ to{transform:translateY(-4px)}
                             <label for="col-title">标题</label>
                         </div>
                         <div class="column-option-item">
+                            <input type="checkbox" id="col-tags" data-col="tags">
+                            <label for="col-tags">标签</label>
+                        </div>
+                        <div class="column-option-item">
                             <input type="checkbox" id="col-type" data-col="type">
                             <label for="col-type">类型</label>
                         </div>
@@ -783,6 +791,7 @@ to{transform:translateY(-4px)}
                             <th class="border-b-2 border-dy-border px-3 py-3 text-center select-none font-semibold text-dy-text bg-white" data-col="id" style="min-width: 180px; width: 180px;">ID</th>
                             <th class="border-b-2 border-dy-border px-3 py-3 text-center select-none font-semibold text-dy-text bg-white" data-col="cover" style="width: 80px;">封面</th>
                             <th class="border-b-2 border-dy-border px-3 py-3 text-center select-none font-semibold text-dy-text bg-white" data-col="title" style="min-width: 250px; width: 250px;">标题</th>
+                            <th class="border-b-2 border-dy-border px-3 py-3 text-center select-none font-semibold text-dy-text bg-white" data-col="tags" style="min-width: 150px; width: 150px;">标签</th>
                             <th class="border-b-2 border-dy-border px-3 py-3 text-center select-none font-semibold text-dy-text bg-white" data-col="type" style="width: 70px;">类型</th>
                             <th class="border-b-2 border-dy-border px-3 py-3 text-center select-none font-semibold text-dy-text bg-white" data-col="author" style="width: 120px;">作者</th>
                             <th data-sort="create_time" class="border-b-2 border-dy-border px-3 py-3 text-center select-none font-semibold text-dy-text cursor-pointer hover:bg-gray-50 transition-colors bg-white" data-col="create_time" style="min-width: 170px; max-width: 170px; width: 170px;">
@@ -844,7 +853,7 @@ to{transform:translateY(-4px)}
                     </thead>
                     <tbody id="tableBody">
                         <tr>
-                            <td colspan="13" class="px-3 py-12 text-center text-gray-400">
+                            <td colspan="14" class="px-3 py-12 text-center text-gray-400">
                                 <div class="flex flex-col items-center gap-3">
                                     <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
@@ -1048,7 +1057,7 @@ to{transform:translateY(-4px)}
             currentPage = 1;
             document.getElementById("tableBody").innerHTML = `
                 <tr>
-                    <td colspan="13" class="px-3 py-12 text-center text-gray-400">
+                    <td colspan="14" class="px-3 py-12 text-center text-gray-400">
                         <div class="flex flex-col items-center gap-3">
                             <svg class="w-12 h-12 text-gray-300 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
@@ -2154,7 +2163,7 @@ to{transform:translateY(-4px)}
         if (!pageData.length) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="13" class="px-3 py-12 text-center text-gray-400">
+                    <td colspan="14" class="px-3 py-12 text-center text-gray-400">
                         <div class="flex flex-col items-center gap-3">
                             <svg class="w-16 h-16 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
@@ -2197,6 +2206,9 @@ to{transform:translateY(-4px)}
                     <td class="border-b border-dy-border px-3 py-3 text-center" data-col="cover">${coverHtml}</td>
                     <td class="border-b border-dy-border px-3 py-3 text-sm" data-col="title" style="max-width: 300px; overflow: hidden; text-overflow: ellipsis;">
                         <span class="block truncate text-dy-text hover:text-dy-red transition-colors cursor-default" title="${(item.desc || '').replaceAll('"','&quot;')}">${item.desc || "-"}</span>
+                    </td>
+                    <td class="border-b border-dy-border px-3 py-3 text-sm" data-col="tags" style="max-width: 200px; overflow: hidden;">
+                        ${((item.text_extra || []).filter(t => t.hashtag_name).map(t => `<span class="inline-block bg-blue-50 text-blue-700 rounded px-1.5 py-0.5 text-xs mr-1 mb-0.5">#${t.hashtag_name}</span>`).join('') || '<span class="text-gray-400">-</span>')}
                     </td>
                     <td class="border-b border-dy-border px-3 py-3 text-center text-sm" data-col="type">
                         <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${item.images ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'}">${item.images ? '图文' : '视频'}</span>
