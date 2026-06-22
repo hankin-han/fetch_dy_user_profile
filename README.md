@@ -411,8 +411,17 @@
     <td><img src="demo15.jpg" width="400" /></td>
   </tr>
 </table>
-## 扫码进微信群
-![ewm](ewm.jpg)
+
+<table>
+  <tr>
+    <th>扫码进微信群</th>
+    <th>打赏作者</th>
+  </tr>
+  <tr>
+    <td><img src="ewm.jpg" width="400" /></td>
+    <td><img src="skm.jpg" width="400" /></td>
+  </tr>
+</table>
 
 
 ---
