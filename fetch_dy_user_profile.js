@@ -1253,7 +1253,7 @@ to{transform:translateY(-4px)}
      */
     function updateColumnVisibility() {
         const table = document.getElementById("workTable");
-        
+
         // 更新表头
         table.querySelectorAll("thead th").forEach(th => {
             const col = th.dataset.col;
@@ -1261,18 +1261,13 @@ to{transform:translateY(-4px)}
                 th.style.display = columnVisibility[col] ? "" : "none";
             }
         });
-        
-        // 更新表格主体
-        table.querySelectorAll("tbody tr").forEach(tr => {
-            tr.querySelectorAll("td").forEach((td, idx) => {
-                const th = table.querySelectorAll("thead th")[idx];
-                if (th) {
-                    const col = th.dataset.col;
-                    if (col) {
-                        td.style.display = columnVisibility[col] ? "" : "none";
-                    }
-                }
-            });
+
+        // 更新表格主体 — 直接使用 td 自身的 data-col 属性，避免索引匹配错乱
+        table.querySelectorAll("tbody td[data-col]").forEach(td => {
+            const col = td.dataset.col;
+            if (col) {
+                td.style.display = columnVisibility[col] ? "" : "none";
+            }
         });
     }
 
@@ -1443,7 +1438,8 @@ to{transform:translateY(-4px)}
             filterWorks = allWorksList.filter(item => {
                 const matchId = String(item.aweme_id).includes(kw);
                 const matchTitle = (item.desc || "").toLowerCase().includes(kw);
-                return matchId || matchTitle;
+                const matchTag = (item.text_extra || []).some(t => (t.hashtag_name || "").toLowerCase().includes(kw));
+                return matchId || matchTitle || matchTag;
             });
         }
         currentPage = 1;
@@ -2208,7 +2204,7 @@ to{transform:translateY(-4px)}
                         <span class="block truncate text-dy-text hover:text-dy-red transition-colors cursor-default" title="${(item.desc || '').replaceAll('"','&quot;')}">${item.desc || "-"}</span>
                     </td>
                     <td class="border-b border-dy-border px-3 py-3 text-sm" data-col="tags" style="max-width: 200px; overflow: hidden;">
-                        ${((item.text_extra || []).filter(t => t.hashtag_name).map(t => `<span class="inline-block bg-blue-50 text-blue-700 rounded px-1.5 py-0.5 text-xs mr-1 mb-0.5">#${t.hashtag_name}</span>`).join('') || '<span class="text-gray-400">-</span>')}
+                        ${((item.text_extra || []).filter(t => t.hashtag_name).map(t => `<span class="inline-block bg-blue-50 text-blue-700 rounded px-1.5 py-0.5 text-xs mr-1 mb-0.5 cursor-pointer hover:bg-blue-100 transition-colors dy-tag-search" data-tag="${t.hashtag_name}">#${t.hashtag_name}</span>`).join('') || '<span class="text-gray-400">-</span>')}
                     </td>
                     <td class="border-b border-dy-border px-3 py-3 text-center text-sm" data-col="type">
                         <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${item.images ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'}">${item.images ? '图文' : '视频'}</span>
@@ -2252,6 +2248,19 @@ to{transform:translateY(-4px)}
                 const aid = cb.dataset.aid;
                 cb.checked ? selectedIds.add(aid) : selectedIds.delete(aid);
                 updateSelCount();
+            };
+        });
+
+        // 标签点击搜索
+        tbody.querySelectorAll(".dy-tag-search").forEach(tag => {
+            tag.onclick = (e) => {
+                e.stopPropagation();
+                const kw = tag.dataset.tag;
+                const searchInput = document.getElementById("searchInput");
+                if (searchInput) {
+                    searchInput.value = kw;
+                    doSearch();
+                }
             };
         });
 
