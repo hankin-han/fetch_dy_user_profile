@@ -1524,7 +1524,7 @@ to{transform:translateY(-4px)}
                         <h4 class="text-base font-semibold text-dy-text m-0">${user.nickname}</h4>
                         <span class="text-xs text-dy-text-secondary bg-dy-bg px-2 py-0.5 rounded font-mono" title="${user.sec_uid}" style="word-break: break-all;line-height: 1.4;">用户ID: ${user.sec_uid}</span>
                         <button class="action-btn data" id="userDataBtn">json原数据</button>
-                        <button class="action-btn download" id="downloadBgBtn" title="下载背景封面">下载背景</button>
+                        ${coverUrl ? `<button class="action-btn download" id="downloadBgBtn" title="下载背景封面">下载背景</button>` : ''}
                     </div>
                     <p class="text-sm text-dy-text-secondary mb-2">${user.signature || "这个人很懒，还没有签名~"}</p>
                     <div class="flex items-center gap-6 text-sm">
