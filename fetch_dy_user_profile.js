@@ -494,7 +494,7 @@ to{transform:translateY(-4px)}
 .dash-chart-wrap{position:relative;width:100%}
 .dash-chart-wrap-pie{max-width:220px;margin:0 auto}
 .dash-chart-wrap-bar{height:220px}
-.dash-chart-wrap-hbar{height:360px}
+.dash-chart-wrap-hbar{height:300px}
 .dash-section-full{grid-column:1/-1}
 /* ====== 对比视图 ====== */
 .compare-container{display:none;flex:1;overflow:auto;padding:20px 24px;background:#f5f6f7}
@@ -589,6 +589,9 @@ to{transform:translateY(-4px)}
                         </svg>
                         重新解析
                     </button>
+                    <span id="fullscreenBtn" class="text-gray-400 text-lg cursor-pointer hover:text-dy-red transition-colors w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100" title="全屏">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                    </span>
                     <span class="drawer-close text-gray-400 text-2xl cursor-pointer hover:text-dy-red transition-colors w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100">&times;</span>
                 </div>
             </div>
@@ -1003,20 +1006,34 @@ to{transform:translateY(-4px)}
         // 抽屉开关
         btn.onclick = () => {
             const isOpen = wrap.classList.toggle("open");
-            mask.classList.toggle("show", isOpen);
+            if (!isOpen) wrap.classList.remove("fullscreen");
+            mask.classList.toggle("show", isOpen && !wrap.classList.contains("fullscreen"));
         };
         wrap.querySelector(".drawer-close").onclick = () => {
             wrap.classList.remove("open");
+            wrap.classList.remove("fullscreen");
             mask.classList.remove("show");
+        };
+        // 全屏按钮
+        document.getElementById("fullscreenBtn").onclick = () => {
+            const isFull = wrap.classList.toggle("fullscreen");
+            // 全屏时确保面板打开并隐藏遮罩
+            if (isFull) {
+                wrap.classList.add("open");
+                mask.classList.remove("show");
+            } else {
+                mask.classList.toggle("show", wrap.classList.contains("open"));
+            }
         };
         mask.onclick = () => {
             wrap.classList.remove("open");
+            wrap.classList.remove("fullscreen");
             mask.classList.remove("show");
         };
         
         // 打开类控制
         const styleOpen = document.createElement("style");
-        styleOpen.textContent = `#dy-drawer-wrap.open { right: 0; }`;
+        styleOpen.textContent = `#dy-drawer-wrap.open{right:0}#dy-drawer-wrap.fullscreen{right:0 !important;left:0 !important;top:0 !important;bottom:0 !important;width:100% !important;border-radius:0 !important}#dy-drawer-wrap.fullscreen~#dy-drawer-mask{opacity:0 !important;pointer-events:none !important}`;
         document.head.appendChild(styleOpen);
 
         // 主题切换按钮
@@ -1645,7 +1662,7 @@ to{transform:translateY(-4px)}
     /**
      * 渲染仪表盘视图
      * 数据源：allWorksList 全量，不分页
-     * 展示：概览卡片、类型分布、Top 10 排行榜
+     * 展示：概览卡片、类型分布、互动均值、点赞/评论/分享/收藏 Top 10
      */
     function renderDashboard(allData) {
         const container = document.getElementById("dashboardContainer");
@@ -1678,6 +1695,8 @@ to{transform:translateY(-4px)}
         const avgCollects = data.length ? Math.round(totalCollects / data.length) : 0;
         const rankLikes = [...data].sort((a,b) => (b.statistics?.digg_count||0) - (a.statistics?.digg_count||0)).slice(0,10);
         const rankComments = [...data].sort((a,b) => (b.statistics?.comment_count||0) - (a.statistics?.comment_count||0)).slice(0,10);
+        const rankShares = [...data].sort((a,b) => (b.statistics?.share_count||0) - (a.statistics?.share_count||0)).slice(0,10);
+        const rankCollects = [...data].sort((a,b) => (b.statistics?.collect_count||0) - (a.statistics?.collect_count||0)).slice(0,10);
 
         container.innerHTML =
             // Row 1: 概览卡片
@@ -1693,13 +1712,15 @@ to{transform:translateY(-4px)}
                 '<div class="dash-section"><div class="dash-section-title">📹 类型分布</div><div class="dash-chart-wrap dash-chart-wrap-pie"><canvas id="dashTypeChart"></canvas></div></div>'+
                 '<div class="dash-section"><div class="dash-section-title">📈 互动均值</div><div class="dash-chart-wrap dash-chart-wrap-bar"><canvas id="dashOverviewChart"></canvas></div></div>'+
             '</div>'+
-            // Row 3: 点赞 Top 10 (水平柱状图，全宽)
+            // Row 3: 点赞 Top 10 + 评论 Top 10 (并排)
             '<div class="dash-row">'+
-                '<div class="dash-section dash-section-full"><div class="dash-section-title">🔥 点赞 Top 10</div><div class="dash-chart-wrap dash-chart-wrap-hbar"><canvas id="dashLikesChart"></canvas></div></div>'+
+                '<div class="dash-section"><div class="dash-section-title">🔥 点赞 Top 10</div><div class="dash-chart-wrap dash-chart-wrap-hbar"><canvas id="dashLikesChart"></canvas></div></div>'+
+                '<div class="dash-section"><div class="dash-section-title">💬 评论 Top 10</div><div class="dash-chart-wrap dash-chart-wrap-hbar"><canvas id="dashCommentsChart"></canvas></div></div>'+
             '</div>'+
-            // Row 4: 评论 Top 10 (水平柱状图，全宽)
+            // Row 4: 分享 Top 10 + 收藏 Top 10 (并排)
             '<div class="dash-row">'+
-                '<div class="dash-section dash-section-full"><div class="dash-section-title">💬 评论 Top 10</div><div class="dash-chart-wrap dash-chart-wrap-hbar"><canvas id="dashCommentsChart"></canvas></div></div>'+
+                '<div class="dash-section"><div class="dash-section-title">📤 分享 Top 10</div><div class="dash-chart-wrap dash-chart-wrap-hbar"><canvas id="dashSharesChart"></canvas></div></div>'+
+                '<div class="dash-section"><div class="dash-section-title">⭐ 收藏 Top 10</div><div class="dash-chart-wrap dash-chart-wrap-hbar"><canvas id="dashCollectsChart"></canvas></div></div>'+
             '</div>';
 
         // 等待 Chart.js 加载完成后初始化图表
@@ -1778,19 +1799,22 @@ to{transform:translateY(-4px)}
                 });
             }
 
-            // 3. 点赞 Top 10 —— 水平柱状图
-            (function renderLikesChart() {
-                const ctx = document.getElementById("dashLikesChart");
+            // 3. Top 10 辅助函数 —— 水平柱状图
+            function renderTop10Chart(canvasId, rankData, valueKey, color, colorTop3, tooltipPrefix) {
+                const ctx = document.getElementById(canvasId);
                 if (!ctx) return;
-                const labels = rankLikes.map((item, i) => (i + 1) + ". " + ((item.desc || "无标题").length > 16 ? (item.desc || "无标题").slice(0, 15) + "…" : (item.desc || "无标题")));
-                const values = rankLikes.map(item => item.statistics?.digg_count || 0);
+                const labels = rankData.map((item, i) => {
+                    const title = item.desc || "无标题";
+                    return (i + 1) + ". " + (title.length > 25 ? title.slice(0, 24) + "…" : title);
+                });
+                const values = rankData.map(item => (item.statistics||{})[valueKey] || 0);
                 new window.Chart(ctx, {
                     type: "bar",
                     data: {
                         labels: labels,
                         datasets: [{
                             data: values,
-                            backgroundColor: values.map((_, i) => i < 3 ? "#fe2c55" : "rgba(254,44,85,0.55)"),
+                            backgroundColor: values.map((_, i) => i < 3 ? colorTop3 : color),
                             borderWidth: 0,
                             borderRadius: 4,
                             borderSkipped: false
@@ -1800,55 +1824,25 @@ to{transform:translateY(-4px)}
                         indexAxis: "y",
                         responsive: true,
                         maintainAspectRatio: false,
+                        layout: { padding: { left: 8 } },
                         plugins: {
                             legend: { display: false },
                             tooltip: {
-                                callbacks: { label: ctx => "👍 " + formatNumber(ctx.parsed.x) + " 赞" }
+                                callbacks: { label: ctx => tooltipPrefix + formatNumber(ctx.parsed.x) }
                             }
                         },
                         scales: {
                             x: { beginAtZero: true, ticks: { color: tc, callback: v => formatNumber(v) }, grid: { color: gc } },
-                            y: { ticks: { color: tc, font: { size: 11 } }, grid: { display: false } }
+                            y: { ticks: { color: tc, font: { size: 11 }, padding: 4 }, grid: { display: false } }
                         }
                     }
                 });
-            })();
+            }
 
-            // 4. 评论 Top 10 —— 水平柱状图
-            (function renderCommentsChart() {
-                const ctx = document.getElementById("dashCommentsChart");
-                if (!ctx) return;
-                const labels = rankComments.map((item, i) => (i + 1) + ". " + ((item.desc || "无标题").length > 16 ? (item.desc || "无标题").slice(0, 15) + "…" : (item.desc || "无标题")));
-                const values = rankComments.map(item => item.statistics?.comment_count || 0);
-                new window.Chart(ctx, {
-                    type: "bar",
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            data: values,
-                            backgroundColor: values.map((_, i) => i < 3 ? "#4fa3ff" : "rgba(79,163,255,0.55)"),
-                            borderWidth: 0,
-                            borderRadius: 4,
-                            borderSkipped: false
-                        }]
-                    },
-                    options: {
-                        indexAxis: "y",
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                callbacks: { label: ctx => "💬 " + formatNumber(ctx.parsed.x) + " 评论" }
-                            }
-                        },
-                        scales: {
-                            x: { beginAtZero: true, ticks: { color: tc, callback: v => formatNumber(v) }, grid: { color: gc } },
-                            y: { ticks: { color: tc, font: { size: 11 } }, grid: { display: false } }
-                        }
-                    }
-                });
-            })();
+            renderTop10Chart("dashLikesChart", rankLikes, "digg_count", "rgba(254,44,85,0.55)", "#fe2c55", "👍 ");
+            renderTop10Chart("dashCommentsChart", rankComments, "comment_count", "rgba(79,163,255,0.55)", "#4fa3ff", "💬 ");
+            renderTop10Chart("dashSharesChart", rankShares, "share_count", "rgba(255,193,7,0.55)", "#ffc107", "📤 ");
+            renderTop10Chart("dashCollectsChart", rankCollects, "collect_count", "rgba(82,196,26,0.55)", "#52c41a", "⭐ ");
         }).catch(err => {
             console.error("[仪表盘] Chart.js 初始化失败:", err);
         });
