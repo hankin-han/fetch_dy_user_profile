@@ -231,7 +231,25 @@
 #dy-drawer-wrap{transition:right 0.35s cubic-bezier(0.4,0,0.2,1);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif}
 #dy-drawer-wrap.dark-mode{background-color:#1a1a1a !important;color:#e5e5e5 !important}
 #dy-drawer-wrap.dark-mode .drawer-header,#dy-drawer-wrap.dark-mode .drawer-user-info,#dy-drawer-wrap.dark-mode .drawer-toolbar,#dy-drawer-wrap.dark-mode .page-bar{background-color:#2d2d2d !important;border-color:#404040 !important}
-#dy-drawer-wrap.dark-mode .drawer-user-info{background:linear-gradient(to right,#2d2d2d,#333333) !important}
+/* 用户信息卡片背景封面图 + 遮罩（保证文字可读） */
+.drawer-user-info{
+    position:relative;
+    background-image:var(--cover-bg,none);
+    background-size:cover;
+    background-position:center;
+    background-repeat:no-repeat
+}
+.drawer-user-info::before{
+    content:'';
+    position:absolute;
+    inset:0;
+    z-index:0;
+    background:var(--cover-overlay,rgba(255,255,255,0.82))
+}
+#dy-drawer-wrap.dark-mode .drawer-user-info::before{
+    background:var(--cover-overlay-dark,rgba(26,26,26,0.85))
+}
+.drawer-user-info>*{position:relative;z-index:1}
 #dy-drawer-wrap.dark-mode input,#dy-drawer-wrap.dark-mode select,#dy-drawer-wrap.dark-mode table,#dy-drawer-wrap.dark-mode thead{background-color:#2d2d2d !important;color:#e5e5e5 !important;border-color:#404040 !important}
 #dy-drawer-wrap.dark-mode tbody tr.bg-white{background-color:#2d2d2d !important}
 #dy-drawer-wrap.dark-mode tbody tr.bg-row-even{background-color:#333333 !important}
@@ -288,6 +306,10 @@ th.sort-active .sort-icon{opacity:1 !important}
 #dy-drawer-wrap.dark-mode .export-dropdown-item{color:#e5e5e5}
 #dy-drawer-wrap.dark-mode .export-dropdown-item:hover{background:#3a3a3a;color:#fe2c55}
 #dy-drawer-wrap.dark-mode .export-dropdown-item:active{background:#4a2020}
+.export-dropdown-label{padding:8px 14px 4px;font-size:11px;color:#999;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;cursor:default;pointer-events:none}
+.export-dropdown-divider{height:1px;background:#eee;margin:4px 0}
+#dy-drawer-wrap.dark-mode .export-dropdown-label{color:#777}
+#dy-drawer-wrap.dark-mode .export-dropdown-divider{background:#404040}
 .view-switch-menu{position:absolute;top:100%;left:0;margin-top:4px;background:white;border:1px solid #e8e8e8;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);padding:8px 0;min-width:140px;z-index:100001;display:none}
 .view-switch-menu.show{display:block}
 .view-switch-item{display:flex;align-items:center;gap:8px;padding:8px 16px;cursor:pointer;font-size:14px;color:#333;transition:background 0.15s}
@@ -572,7 +594,7 @@ to{transform:translateY(-4px)}
             </div>
 
             <!-- 用户信息卡片 -->
-            <div class="drawer-user-info px-6 py-4 border-b border-dy-border text-sm shrink-0 bg-gradient-to-r from-dy-bg to-white" id="userInfoBox">
+            <div class="drawer-user-info px-6 py-4 border-b border-dy-border text-sm shrink-0" id="userInfoBox">
                 <div class="flex items-center gap-3">
                     <div class="loading-shimmer w-12 h-12 rounded-full"></div>
                     <div class="flex-1">
@@ -603,14 +625,22 @@ to{transform:translateY(-4px)}
                 </button>
                 <div class="export-dropdown" id="exportDropdown">
                     <button class="export-dropdown-btn" id="exportDropdownBtn">
-                        导出选中 (<span id="selCount">0</span>)
-                        <span class="arrow">▾</span>
+                        导出数据 (<span id="selCount">0</span>) <span class="arrow">▾</span>
                     </button>
                     <div class="export-dropdown-menu" id="exportDropdownMenu">
-                        <button class="export-dropdown-item" data-format="json">JSON</button>
-                        <button class="export-dropdown-item" data-format="csv">CSV</button>
-                        <button class="export-dropdown-item" data-format="txt">TXT</button>
-                        <button class="export-dropdown-item" data-format="video">导出视频 (.zip)</button>
+                        <div class="export-dropdown-label">导出选择</div>
+                        <button class="export-dropdown-item" data-format="json" data-scope="selected">JSON</button>
+                        <button class="export-dropdown-item" data-format="csv" data-scope="selected">CSV</button>
+                        <button class="export-dropdown-item" data-format="txt" data-scope="selected">TXT</button>
+                        <button class="export-dropdown-item" data-format="caption" data-scope="selected">仅文案TXT</button>
+                        <div class="export-dropdown-divider"></div>
+                        <div class="export-dropdown-label">批量导出全部</div>
+                        <button class="export-dropdown-item" data-format="json" data-scope="all">全部JSON</button>
+                        <button class="export-dropdown-item" data-format="txt" data-scope="all">全部TXT</button>
+                        <button class="export-dropdown-item" data-format="csv" data-scope="all">全部CSV</button>
+                        <button class="export-dropdown-item" data-format="caption" data-scope="all">全部文案TXT</button>
+                        <div class="export-dropdown-divider"></div>
+                        <button class="export-dropdown-item" data-format="video" data-scope="selected">导出视频 (.zip)</button>
                     </div>
                 </div>
                 
@@ -1149,11 +1179,19 @@ to{transform:translateY(-4px)}
             item.onclick = (e) => {
                 e.stopPropagation();
                 const fmt = item.dataset.format;
+                const scope = item.dataset.scope;
                 exportDropdown.classList.remove("open");
-                if (fmt === "video") {
-                    exportVideoZip();
+                
+                if (scope === "all") {
+                    // 批量导出全部
+                    exportAllData(fmt);
                 } else {
-                    exportSelectData(fmt);
+                    // 导出选择
+                    if (fmt === "video") {
+                        exportVideoZip();
+                    } else {
+                        exportSelectData(fmt);
+                    }
                 }
             };
         });
@@ -1441,16 +1479,52 @@ to{transform:translateY(-4px)}
      */
     function renderUserInfo(user) {
         const box = document.getElementById("userInfoBox");
+        // 背景封面图：cover_and_head_image_info.profile_cover_list → cover_url.url_list
+        let coverUrl = '';
+        const pcl = userProfile?.cover_and_head_image_info?.profile_cover_list;
+        if (pcl) {
+            if (Array.isArray(pcl) && pcl[0]?.cover_url?.url_list?.[0]) {
+                coverUrl = pcl[0].cover_url.url_list[0];
+            } else if (pcl.cover_url?.url_list?.[0]) {
+                coverUrl = pcl.cover_url.url_list[0];
+            }
+        }
+        // 浅色/深色封面色调
+        const lightCoverColor = userProfile?.light_cover_color || '';
+        const darkCoverColor  = userProfile?.dark_cover_color  || '';
+        // hex → rgba 辅助
+        const hexToRgba = (hex, alpha) => {
+            if (!hex || typeof hex !== 'string') return null;
+            let h = hex.replace('#', '').trim();
+            if (h.length === 3) h = h.split('').map(c => c + c).join('');
+            if (h.length !== 6) return null;
+            const r = parseInt(h.slice(0, 2), 16);
+            const g = parseInt(h.slice(2, 4), 16);
+            const b = parseInt(h.slice(4, 6), 16);
+            return `rgba(${r},${g},${b},${alpha})`;
+        };
+        // 设置 CSS 变量：背景图 + 遮罩色
+        box.style.setProperty('--cover-bg', coverUrl ? `url("${coverUrl}")` : 'none');
+        box.style.setProperty('--cover-overlay', hexToRgba(lightCoverColor, 0.82) || 'rgba(255,255,255,0.82)');
+        box.style.setProperty('--cover-overlay-dark', hexToRgba(darkCoverColor, 0.85) || 'rgba(26,26,26,0.85)');
+
         box.innerHTML = `
             <div class="flex items-start gap-4">
-                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-dy-red to-pink-500 flex items-center justify-center text-dy-text font-bold text-lg shadow-md">
-                    ${(user.nickname || '?')[0]}
+                <div class="flex flex-col items-center gap-1.5 flex-shrink-0">
+                    <div class="w-14 h-14 rounded-full overflow-hidden bg-white shadow-md flex items-center justify-center" style="border:3px solid white;">
+                        <img src="${userProfile?.avatar_thumb?.url_list?.[0] || userProfile?.avatar_medium?.url_list?.[0] || ''}" 
+                             class="w-full h-full object-cover" 
+                             onerror="this.style.display='none';this.parentElement.innerHTML='${(user.nickname || '?')[0]}';" 
+                             alt="${user.nickname || '?'}">
+                    </div>
+                    <button class="action-btn download" id="downloadAvatarBtn" title="下载头像">下载头像</button>
                 </div>
                 <div class="flex-1">
-                    <div class="flex items-center gap-3 mb-2">
+                    <div class="flex items-center gap-3 mb-2 flex-wrap">
                         <h4 class="text-base font-semibold text-dy-text m-0">${user.nickname}</h4>
                         <span class="text-xs text-dy-text-secondary bg-dy-bg px-2 py-0.5 rounded font-mono" title="${user.sec_uid}" style="word-break: break-all;line-height: 1.4;">用户ID: ${user.sec_uid}</span>
                         <button class="action-btn data" id="userDataBtn">json原数据</button>
+                        <button class="action-btn download" id="downloadBgBtn" title="下载背景封面">下载背景</button>
                     </div>
                     <p class="text-sm text-dy-text-secondary mb-2">${user.signature || "这个人很懒，还没有签名~"}</p>
                     <div class="flex items-center gap-6 text-sm">
@@ -1498,6 +1572,48 @@ to{transform:translateY(-4px)}
         const userDataBtn = document.getElementById("userDataBtn");
         if (userDataBtn) {
             userDataBtn.onclick = () => showJsonModal(user, `用户数据 - ${user.nickname || ""}`);
+        }
+        // 绑定下载头像按钮
+        const downloadAvatarBtn = document.getElementById("downloadAvatarBtn");
+        if (downloadAvatarBtn) {
+            downloadAvatarBtn.onclick = async () => {
+                const avatarUrl = userProfile?.avatar_larger?.url_list?.[0] 
+                    || userProfile?.avatar_medium?.url_list?.[0] 
+                    || userProfile?.avatar_thumb?.url_list?.[0];
+                if (!avatarUrl) return alert("未找到头像地址");
+                try {
+                    const resp = await fetch(avatarUrl);
+                    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                    const blob = await resp.blob();
+                    triggerDownload(blob, `头像_${user.nickname || "用户"}.jpg`);
+                } catch (e) {
+                    window.open(avatarUrl, "_blank");
+                }
+            };
+        }
+        // 绑定下载背景按钮
+        const downloadBgBtn = document.getElementById("downloadBgBtn");
+        if (downloadBgBtn) {
+            downloadBgBtn.onclick = async () => {
+                let bgUrl = '';
+                const pcl = userProfile?.cover_and_head_image_info?.profile_cover_list;
+                if (pcl) {
+                    if (Array.isArray(pcl) && pcl[0]?.cover_url?.url_list?.[0]) {
+                        bgUrl = pcl[0].cover_url.url_list[0];
+                    } else if (pcl.cover_url?.url_list?.[0]) {
+                        bgUrl = pcl.cover_url.url_list[0];
+                    }
+                }
+                if (!bgUrl) return alert("未找到背景图地址");
+                try {
+                    const resp = await fetch(bgUrl);
+                    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                    const blob = await resp.blob();
+                    triggerDownload(blob, `背景_${user.nickname || "用户"}.jpg`);
+                } catch (e) {
+                    window.open(bgUrl, "_blank");
+                }
+            };
         }
     }
 
@@ -2433,9 +2549,8 @@ to{transform:translateY(-4px)}
     }
 
     /**
-     * 导出选中作品，支持 JSON / CSV / TXT 三种格式
-     * 格式由工具栏 #exportFormat 下拉框决定
-     * 注意：先从 DOM 复选框回读选中状态，防止 selectedIds 与界面不同步
+     * 导出选中作品，支持 JSON / CSV / TXT / caption 四种格式
+     * caption 格式仅包含作品文案（desc），纯文本一行一条
      */
     function exportSelectData(format) {
         // 从 DOM 回读勾选状态，防止 selectedIds 与界面不同步
@@ -2521,8 +2636,16 @@ to{transform:translateY(-4px)}
             filename = `抖音作品_${nickname}_选中数据.csv`;
             mimeType = "text/csv;charset=utf-8";
 
+        } else if (format === "caption") {
+            // ---- 仅文案 TXT 格式 ----
+            const captions = selected.map((item, idx) => {
+                const text = item.desc || "";
+                return `${idx + 1}. ` + (text.trim() ? text.trim() : `(无文案)`);
+            });
+            content = captions.join("\n\n");
+            filename = `抖音文案_${nickname}_选中.txt`;
+            mimeType = "text/plain;charset=utf-8";
         } else {
-            // ---- TXT 格式 ----
             const lines = [];
             lines.push(`========================================`);
             lines.push(`  抖音作品导出数据`);
@@ -2570,6 +2693,146 @@ to{transform:translateY(-4px)}
             });
             content = lines.join("\n");
             filename = `抖音作品_${nickname}_选中数据.txt`;
+            mimeType = "text/plain;charset=utf-8";
+        }
+
+        const blob = new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    /**
+     * 批量导出全部作品，支持 JSON / CSV / TXT / caption 四种格式
+     */
+    function exportAllData(format) {
+        if (!allWorksList.length) return alert("暂无作品数据！");
+
+        format = format || "json";
+        const nickname = userProfile?.nickname || "未知用户";
+
+        // 构建通用数据行
+        const rows = allWorksList.map(item => {
+            const st = item.statistics || {};
+            return {
+                aweme_id: item.aweme_id,
+                type: item.images ? "图文" : "视频",
+                video_url: item.video?.play_addr?.url_list?.[item.video.play_addr.url_list.length - 1] || "",
+                play_addr: item.video?.play_addr || null,
+                cover_url: item.video?.cover?.url_list[0] || (item.images?.[0]?.url_list[0] || ""),
+                title: item.desc || "",
+                author: item.author?.nickname || userProfile?.nickname || "",
+                create_time_str: formatDateTime(item.create_time),
+                digg_count: st.digg_count || 0,
+                share_count: st.share_count || 0,
+                comment_count: st.comment_count || 0,
+                collect_count: st.collect_count || 0,
+                promote_count: st.recommend_count || 0
+            };
+        });
+
+        let content, filename, mimeType;
+
+        if (format === "json") {
+            const obj = {
+                user_info: {
+                    nickname: userProfile?.nickname || "",
+                    unique_id: userProfile?.unique_id || "",
+                    sec_uid: userProfile?.sec_uid || "",
+                    signature: userProfile?.signature || "",
+                    avatar: userProfile?.avatar_thumb?.url_list?.[0] || userProfile?.avatar_medium?.url_list?.[0] || "",
+                    ip_location: userProfile?.ip_location || userProfile?.ip_attr || "",
+                    region: userProfile?.region || "",
+                    follower_count: userProfile?.follower_count || 0,
+                    following_count: userProfile?.following_count || 0,
+                    aweme_count: userProfile?.aweme_count || 0,
+                    total_favorited: userProfile?.total_favorited || 0,
+                    page_url: location.href
+                },
+                export_time: new Date().toLocaleString(),
+                total: allWorksList.length,
+                list: rows
+            };
+            content = JSON.stringify(obj, null, 2);
+            filename = `抖音作品_${nickname}_全部数据.json`;
+            mimeType = "application/json";
+        } else if (format === "csv") {
+            const headers = ["作品ID", "类型", "标题", "作者", "发布时间", "点赞数", "分享数", "评论数", "收藏数", "推广数", "封面地址", "视频地址"];
+            const esc = v => {
+                const s = String(v ?? "");
+                if (s.includes(",") || s.includes("\n") || s.includes('"')) {
+                    return '"' + s.replace(/"/g, '""') + '"';
+                }
+                return s;
+            };
+            const headerLine = headers.map(esc).join(",");
+            const dataLines = rows.map(r => [
+                r.aweme_id, r.type, r.title, r.author, r.create_time_str,
+                r.digg_count, r.share_count, r.comment_count, r.collect_count, r.promote_count,
+                r.cover_url, r.video_url
+            ].map(esc).join(","));
+            content = "\uFEFF" + [headerLine, ...dataLines].join("\n");
+            filename = `抖音作品_${nickname}_全部数据.csv`;
+            mimeType = "text/csv;charset=utf-8";
+        } else if (format === "caption") {
+            const captions = allWorksList.map((item, idx) => {
+                const text = item.desc || "";
+                return `${idx + 1}. ` + (text.trim() ? text.trim() : `(无文案)`);
+            });
+            content = captions.join("\n\n");
+            filename = `抖音文案_${nickname}_全部.txt`;
+            mimeType = "text/plain;charset=utf-8";
+        } else {
+            const lines = [];
+            lines.push("========================================");
+            lines.push("  抖音作品导出数据（全部）");
+            lines.push("========================================");
+            lines.push("");
+            lines.push("  【用户信息】");
+            lines.push(`  昵称:        ${userProfile?.nickname || "-"}`);
+            lines.push(`  抖音号:      ${userProfile?.unique_id || "-"}`);
+            lines.push(`  sec_uid:     ${userProfile?.sec_uid || "-"}`);
+            lines.push(`  签名:        ${userProfile?.signature || "-"}`);
+            lines.push(`  头像:        ${userProfile?.avatar_thumb?.url_list?.[0] || userProfile?.avatar_medium?.url_list?.[0] || "-"}`);
+            if (userProfile?.ip_location) lines.push(`  IP 属地:     ${userProfile.ip_location}`);
+            if (userProfile?.ip_attr) lines.push(`  IP 属地:     ${userProfile.ip_attr}`);
+            if (userProfile?.region) lines.push(`  地区:        ${userProfile.region}`);
+            lines.push(`  粉丝数:      ${userProfile?.follower_count || 0}`);
+            lines.push(`  关注数:      ${userProfile?.following_count || 0}`);
+            lines.push(`  作品数:      ${userProfile?.aweme_count || 0}`);
+            lines.push(`  获赞总数:    ${userProfile?.total_favorited || 0}`);
+            lines.push(`  主页链接:    ${location.href}`);
+            lines.push("");
+            lines.push(`  导出时间:    ${new Date().toLocaleString()}`);
+            lines.push(`  全部作品数:  ${allWorksList.length}`);
+            lines.push("");
+            lines.push("========================================");
+            lines.push("");
+            allWorksList.forEach((item, idx) => {
+                const st = item.statistics || {};
+                const promoteCount = st.recommend_count || 0;
+                const coverUrl = item.video?.cover?.url_list[0] || (item.images?.[0]?.url_list[0] || "");
+                const videoUrl = item.video?.play_addr?.url_list?.[item.video.play_addr.url_list.length - 1] || "";
+                lines.push(`--- 作品 ${idx + 1} / ${allWorksList.length} ---`);
+                lines.push(`  ID:      ${item.aweme_id}`);
+                lines.push(`  类型:    ${item.images ? "图文" : "视频"}`);
+                lines.push(`  标题:    ${item.desc || "(无标题)"}`);
+                lines.push(`  作者:    ${item.author?.nickname || userProfile?.nickname || "-"}`);
+                lines.push(`  时间:    ${formatDateTime(item.create_time)}`);
+                lines.push(`  点赞:    ${st.digg_count || 0}`);
+                lines.push(`  分享:    ${st.share_count || 0}`);
+                lines.push(`  评论:    ${st.comment_count || 0}`);
+                lines.push(`  收藏:    ${st.collect_count || 0}`);
+                lines.push(`  推广:    ${promoteCount}`);
+                if (videoUrl) lines.push(`  视频:    ${videoUrl}`);
+                if (coverUrl) lines.push(`  封面:    ${coverUrl}`);
+                lines.push("");
+            });
+            content = lines.join("\n");
+            filename = `抖音作品_${nickname}_全部数据.txt`;
             mimeType = "text/plain;charset=utf-8";
         }
 
