@@ -29,6 +29,7 @@
         REQUEST_DELAY: 350,            // 每次请求间隔 ms（防限流）
         MAX_RETRIES: 2,                // 失败重试次数
         RETRY_DELAY: 1000,             // 重试间隔
+        CACHE_VERSION: 2,              // 缓存版本，结构变更时递增，旧缓存自动失效
     };
 
     // ============================================================
@@ -171,7 +172,7 @@
 
 /* 抽屉面板 — 从右侧滑入 */
 .comment-modal-panel {
-    position: fixed; right: -65vw; top: 0; width: 65vw; height: 100vh; z-index: 200003;
+    position: fixed; right: -75vw; top: 0; width: 75vw; height: 100vh; z-index: 200003;
     background: #fff; box-shadow: -4px 0 24px rgba(0,0,0,0.12);
     display: flex; flex-direction: column; overflow: hidden;
     transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
@@ -259,7 +260,7 @@
 .comment-table-wrap.show { display: block; }
 
 /* 评论表格 */
-.comment-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.comment-table { min-width: 1300px; border-collapse: collapse; table-layout: fixed; }
 .comment-table thead { position: sticky; top: 0; z-index: 10; }
 .comment-table thead th {
     background: #fafafa; padding: 10px 10px; font-size: 12px; font-weight: 600;
@@ -297,6 +298,57 @@
 /* 所属评论列折叠按钮 */
 .cmt-parent-toggle { cursor: pointer; color: #999; font-size: 11px; transition: color 0.15s; margin-left: 4px; }
 .cmt-parent-toggle:hover { color: #fe2c55; }
+
+/* JSON原数据 按钮 */
+.cmt-json-btn {
+    padding: 3px 10px; border-radius: 4px; border: 1px solid #ddd; background: #fff;
+    cursor: pointer; font-size: 11px; color: #666; transition: all 0.15s; white-space: nowrap;
+}
+.cmt-json-btn:hover { background: #fe2c55; color: #fff; border-color: #fe2c55; }
+#dy-drawer-wrap.dark-mode .cmt-json-btn { background: #2d2d2d; border-color: #555; color: #aaa; }
+#dy-drawer-wrap.dark-mode .cmt-json-btn:hover { background: #fe2c55; color: #fff; border-color: #fe2c55; }
+
+/* JSON原数据 查看弹层 */
+.cmt-json-modal {
+    position: fixed; inset: 0; z-index: 200003; display: none;
+    align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+}
+.cmt-json-modal.show { display: flex; }
+.cmt-json-modal-inner {
+    background: #fff; border-radius: 12px; box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+    width: 600px; max-width: 90vw; max-height: 80vh; display: flex; flex-direction: column;
+    overflow: hidden;
+}
+#dy-drawer-wrap.dark-mode .cmt-json-modal-inner { background: #2d2d2d; }
+.cmt-json-modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 18px; border-bottom: 1px solid #eee; flex-shrink: 0;
+    font-size: 14px; font-weight: 600; color: #333;
+}
+#dy-drawer-wrap.dark-mode .cmt-json-modal-header { border-color: #444; color: #e5e5e5; }
+.cmt-json-modal-close {
+    background: none; border: none; font-size: 18px; cursor: pointer;
+    color: #999; padding: 0; line-height: 1; transition: color 0.15s;
+}
+.cmt-json-modal-close:hover { color: #fe2c55; }
+.cmt-json-copy-btn {
+    padding: 4px 12px; border-radius: 4px; border: 1px solid #ddd;
+    background: #fff; cursor: pointer; font-size: 12px; color: #666;
+    transition: all 0.15s;
+}
+.cmt-json-copy-btn:hover { background: #fe2c55; color: #fff; border-color: #fe2c55; }
+#dy-drawer-wrap.dark-mode .cmt-json-copy-btn { background: #333; border-color: #555; color: #aaa; }
+#dy-drawer-wrap.dark-mode .cmt-json-copy-btn:hover { background: #fe2c55; color: #fff; border-color: #fe2c55; }
+.cmt-json-modal-body {
+    padding: 16px 18px; overflow: auto; flex: 1;
+}
+.cmt-json-modal-body pre {
+    margin: 0; font-family: 'SF Mono', 'Monaco', 'Menlo', 'Consolas', monospace;
+    font-size: 12px; line-height: 1.6; color: #333; white-space: pre-wrap;
+    word-break: break-all;
+}
+#dy-drawer-wrap.dark-mode .cmt-json-modal-body pre { color: #e5e5e5; }
 
 /* 分页栏 */
 .comment-modal-footer {
@@ -409,7 +461,10 @@
                             所属评论 <span class="cmt-parent-toggle" id="cmt-parent-toggle" title="折叠/展开此列">◀</span>
                         </th>
                         <th>评论内容</th>
-                        <th style="width:120px;">昵称</th>
+                        <th style="width:120px;">用户</th>
+                        <th style="width:120px;">抖音ID</th>
+                        <th style="width:100px;">抖音号</th>
+                        <th style="width:80px;">IP</th>
                         <th style="width:72px;text-align:center;cursor:pointer;user-select:none;" 
                             class="sortable" id="cmt-sort-digg" data-sort="digg_count">
                             点赞 <span class="sort-arrow">▲</span>
@@ -418,6 +473,7 @@
                             class="sortable" id="cmt-sort-time" data-sort="create_time">
                             时间 <span class="sort-arrow">▲</span>
                         </th>
+                        <th style="width:72px;text-align:center;">操作</th>
                     </tr>
                 </thead>
                 <tbody id="cmt-table-body"></tbody>
@@ -438,6 +494,21 @@
             </div>
         </div>
     </div>
+    <!-- JSON原数据 查看弹层 -->
+    <div class="cmt-json-modal" id="cmt-json-modal">
+        <div class="cmt-json-modal-inner">
+            <div class="cmt-json-modal-header">
+                <span id="cmt-json-title">JSON 原数据</span>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <button class="cmt-json-copy-btn" id="cmt-json-btn-copy" title="复制JSON数据">复制</button>
+                    <button class="cmt-json-modal-close" id="cmt-json-btn-close" title="关闭">✕</button>
+                </div>
+            </div>
+            <div class="cmt-json-modal-body">
+                <pre id="cmt-json-content"></pre>
+            </div>
+        </div>
+    </div>
 </div>
 `;
         const container = document.getElementById('dy-drawer-wrap') || document.body;
@@ -445,6 +516,7 @@
         el.innerHTML = html;
         container.appendChild(el.firstElementChild); // 遮罩层
         container.appendChild(el.firstElementChild); // 抽屉面板
+        container.appendChild(el.firstElementChild); // JSON 查看弹层
     }
 
     function ensureDOM() {
@@ -565,7 +637,10 @@
         try {
             var raw = localStorage.getItem(getCacheKey(awemeId));
             if (!raw) return null;
-            return JSON.parse(raw);
+            var data = JSON.parse(raw);
+            // 版本不匹配则丢弃旧缓存
+            if (data._v !== CONFIG.CACHE_VERSION) return null;
+            return data;
         } catch (e) {
             return null;
         }
@@ -585,8 +660,9 @@
                     _total: data.rows.length
                 };
             }
+            toSave._v = CONFIG.CACHE_VERSION;  // 写入缓存版本号
             localStorage.setItem(getCacheKey(awemeId), JSON.stringify(toSave));
-            console.log('[评论模块] 缓存已写入 localStorage: ' + toSave.rows.length + ' 条');
+            console.log('[评论模块] 缓存已写入 localStorage: ' + toSave.rows.length + ' 条 (v' + CONFIG.CACHE_VERSION + ')');
         } catch (e) {
             console.warn('[评论模块] localStorage 缓存写入失败:', e.message);
         }
@@ -687,10 +763,14 @@
                         parent_text: '',
                         text: (cmt.text || '').replace(/\n/g, ' '),
                         nickname: safeGet(cmt, 'user.nickname', '用户'),
+                        uid: safeGet(cmt, 'user.uid', ''),
+                        unique_id: safeGet(cmt, 'user.unique_id', ''),
+                        ip_label: cmt.ip_label || '',
                         digg_count: Number(cmt.digg_count || 0),
                         create_time: Number(cmt.create_time || 0),
                         create_time_str: formatDateTime(cmt.create_time),
-                        reply_total: Number(cmt.reply_comment_total || 0)
+                        reply_total: Number(cmt.reply_comment_total || 0),
+                        _raw: cmt
                     });
 
                     updateProgressUI(allRows.length, Math.max(totalEstimate, 1),
@@ -714,10 +794,14 @@
                                 parent_text: parentText.substring(0, 30),
                                 text: (rpy.text || '').replace(/\n/g, ' '),
                                 nickname: safeGet(rpy, 'user.nickname', '用户'),
+                                uid: safeGet(rpy, 'user.uid', ''),
+                                unique_id: safeGet(rpy, 'user.unique_id', ''),
+                                ip_label: rpy.ip_label || '',
                                 digg_count: Number(rpy.digg_count || 0),
                                 create_time: Number(rpy.create_time || 0),
                                 create_time_str: formatDateTime(rpy.create_time),
-                                reply_total: 0
+                                reply_total: 0,
+                                _raw: rpy
                             });
                         }
                     }
@@ -813,6 +897,7 @@
         tbody.innerHTML = '';
         for (const r of pageRows) {
             const isReply = r.type === '回复';
+            const allIdx = STATE.allRows.indexOf(r);
             const tr = document.createElement('tr');
             tr.className = isReply ? 'row-reply' : '';
             tr.innerHTML = `
@@ -822,8 +907,14 @@
                 <td data-col="parent" style="font-size:12px;color:#999;${STATE.parentColumnVisible ? '' : 'display:none;'}">${r.parent_text || '-'}</td>
                 <td style="line-height:1.6;">${escapeHtml(r.text)}</td>
                 <td style="color:#666;font-size:12px;">${escapeHtml(r.nickname)}</td>
+                <td style="font-size:12px;color:#666;font-family:monospace;">${escapeHtml(r.uid) || '-'}</td>
+                <td style="font-size:12px;color:#666;">${escapeHtml(r.unique_id) || '-'}</td>
+                <td style="font-size:12px;color:#999;">${escapeHtml(r.ip_label) || '-'}</td>
                 <td style="text-align:center;font-weight:500;">${formatNumber(r.digg_count)}</td>
                 <td style="text-align:center;font-size:12px;color:#999;" title="${r.create_time_str}">${r.create_time_str}</td>
+                <td style="text-align:center;">
+                    <button class="cmt-json-btn" data-row-idx="${allIdx}" title="查看原始JSON数据">json数据</button>
+                </td>
             `;
             tbody.appendChild(tr);
         }
@@ -1010,6 +1101,21 @@
         const overlay = document.getElementById('dy-comment-modal-overlay');
         if (overlay) overlay.classList.remove('show');
         document.getElementById('cmt-export-menu').classList.remove('show');
+        // 同时关闭 JSON 查看弹层
+        hideRawJSON();
+    }
+
+    function showRawJSON(rowIndex) {
+        const row = STATE.allRows[rowIndex];
+        if (!row || !row._raw) return;
+        document.getElementById('cmt-json-title').textContent = 'JSON 原数据 — ' + (row.nickname || '用户');
+        document.getElementById('cmt-json-content').textContent = JSON.stringify(row._raw, null, 2);
+        document.getElementById('cmt-json-modal').classList.add('show');
+    }
+
+    function hideRawJSON() {
+        const modal = document.getElementById('cmt-json-modal');
+        if (modal) modal.classList.remove('show');
     }
 
     function renderPageSizeSelect() {
@@ -1119,6 +1225,46 @@
             // 更新数据列
             const rows = document.querySelectorAll('#cmt-table-body td[data-col="parent"]');
             rows.forEach(td => { td.style.display = STATE.parentColumnVisible ? '' : 'none'; });
+        };
+
+        // JSON原数据 按钮事件委托
+        document.getElementById('cmt-table-body').addEventListener('click', (e) => {
+            const btn = e.target.closest('.cmt-json-btn');
+            if (!btn) return;
+            e.stopPropagation();
+            const rowIdx = parseInt(btn.dataset.rowIdx, 10);
+            if (!isNaN(rowIdx)) showRawJSON(rowIdx);
+        });
+
+        // JSON查看弹层关闭
+        document.getElementById('cmt-json-btn-close').onclick = hideRawJSON;
+        document.getElementById('cmt-json-modal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) hideRawJSON();
+        });
+
+        // JSON复制按钮
+        document.getElementById('cmt-json-btn-copy').onclick = () => {
+            const text = document.getElementById('cmt-json-content').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById('cmt-json-btn-copy');
+                btn.textContent = '已复制';
+                btn.style.background = '#4ade80';
+                btn.style.color = '#fff';
+                btn.style.borderColor = '#4ade80';
+                setTimeout(() => {
+                    btn.textContent = '复制';
+                    btn.style.background = '';
+                    btn.style.color = '';
+                    btn.style.borderColor = '';
+                }, 1500);
+            }).catch(() => {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+            });
         };
 
         // 每页条数切换
