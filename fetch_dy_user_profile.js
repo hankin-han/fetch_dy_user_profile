@@ -361,6 +361,10 @@ th[data-col="operation"],td[data-col="operation"]{min-width:140px;width:140px;te
 #workTable tbody td.comment_count{font-size:11px!important}
 #workTable tbody td.collect_count{font-size:11px!important}
 #workTable tbody td.promote_count{font-size:11px!important}
+.dy-comment-link{color:#fe2c55 !important;cursor:pointer;font-weight:600;transition:color 0.2s}
+.dy-comment-link:hover{color:#e5264c !important;text-decoration:underline}
+#dy-drawer-wrap.dark-mode .dy-comment-link{color:#ff4d6a !important}
+#dy-drawer-wrap.dark-mode .dy-comment-link:hover{color:#ff6b82 !important}
 .action-btn{padding:2px 8px;border-radius:4px;font-size:12px;border:1px solid #e8e8e8;background:#f5f5f5;cursor:pointer;transition:all 0.2s;margin:0 2px}
 .action-btn:hover{background:#e8e8e8}
 .action-btn.delete{color:#fe2c55;border-color:#ffd1d9;background:#fff0f2}
@@ -1139,6 +1143,25 @@ to{transform:translateY(-4px)}
             if (e.key === "Escape" && videoModalOverlay && videoModalOverlay.classList.contains("show")) {
                 closeVideoModal();
             }
+        });
+
+        // 评论数点击 → 打开评论弹窗
+        document.getElementById("tableBody").addEventListener("click", (e) => {
+            const commentLink = e.target.closest(".dy-comment-link");
+            if (!commentLink) return;
+            e.stopPropagation();
+            if (!window.DyComment) {
+                console.warn('[主模块] 评论模块未加载，请检查 dy_comment_module.js 是否可访问');
+                alert('评论模块未加载，请查看控制台中 [评论模块] 开头的错误信息\n加载地址：' + (window.__DyCommentUrl__ || '未知'));
+                return;
+            }
+            const aid = commentLink.dataset.aid;
+            const desc = commentLink.dataset.desc || '';
+            const commentTotal = parseInt(commentLink.dataset.commentTotal) || 0;
+            const item = allWorksList.find(w => String(w.aweme_id) === aid);
+            const payload = item || { aweme_id: aid, desc, statistics: { comment_count: commentTotal } };
+            console.log('[主模块] 打开评论弹窗, aid=', aid, 'payload=', payload);
+            window.DyComment.open(payload);
         });
 
         // 封面点击 → 视频或图文幻灯片（表格视图）
@@ -2213,7 +2236,11 @@ to{transform:translateY(-4px)}
                     <td class="border-b border-dy-border px-3 py-3 text-center text-sm text-dy-text-secondary" data-col="create_time" style="min-width: 170px; max-width: 170px; width: 170px;">${formatDateTime(item.create_time)}</td>
                     <td class="border-b border-dy-border px-3 py-3 text-center font-medium text-dy-text digg_count" data-col="digg_count">${formatNumber(stats.digg_count || 0)}</td>
                     <td class="border-b border-dy-border px-3 py-3 text-center font-medium text-dy-text share_count" data-col="share_count">${formatNumber(stats.share_count || 0)}</td>
-                    <td class="border-b border-dy-border px-3 py-3 text-center font-medium text-dy-text comment_count" data-col="comment_count">${formatNumber(stats.comment_count || 0)}</td>
+                    <td class="border-b border-dy-border px-3 py-3 text-center font-medium text-dy-text comment_count" data-col="comment_count">
+    ${(stats.comment_count || 0) > 0 
+        ? `<span class="dy-comment-link" style="color:#fe2c55;cursor:pointer;font-weight:600" data-aid="${aid}" data-desc="${(item.desc || '').replace(/"/g, '&quot;')}" data-comment-total="${stats.comment_count || 0}" title="点击查看评论">${formatNumber(stats.comment_count)}</span>`
+        : `<span class="text-gray-400">0</span>`}
+</td>
                     <td class="border-b border-dy-border px-3 py-3 text-center font-medium text-dy-text collect_count" data-col="collect_count">${formatNumber(stats.collect_count || 0)}</td>
                     <td class="border-b border-dy-border px-3 py-3 text-center font-medium text-dy-text promote_count" data-col="promote_count">${formatNumber(promoteCount)}</td>
                     <td class="border-b border-dy-border px-3 py-3 text-center" data-col="operation">
@@ -3126,4 +3153,25 @@ to{transform:translateY(-4px)}
     setTimeout(async () => {
         await init();
     }, 500);
+
+    // ---- 动态加载评论模块 ----
+    (function loadCommentModule() {
+        const ts = Date.now();
+        const script = document.createElement('script');
+        script.src = 'https://bz.hankin.cn/static/chrome/dy_comment_module.js?t=' + ts;
+        console.log('哈哈哈base2',script.src)
+        window.__DyCommentUrl__ = script.src;
+        script.async = false;
+        script.onload = () => {
+            if (window.DyComment) {
+                console.log('[主模块] 评论模块加载成功, window.DyComment=', !!window.DyComment);
+            } else {
+                console.error('[主模块] 评论模块脚本已加载但 window.DyComment 未定义，请查看上方 [评论模块] 开头的错误');
+            }
+        };
+        script.onerror = (err) => {
+            console.error('[主模块] 评论模块加载失败（网络错误），路径:', script.src, err);
+        };
+        document.head.appendChild(script);
+    })();
 })();
