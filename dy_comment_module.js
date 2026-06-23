@@ -109,12 +109,46 @@
     /** 检测当前是否深色模式 */
     function isDarkMode() {
         const wrap = document.getElementById('dy-drawer-wrap');
-        return wrap ? wrap.classList.contains('dark-mode') : false;
+        if (wrap) return wrap.classList.contains('dark-mode');
+        return localStorage.getItem('hankin-dy-drawer-theme') === 'dark';
     }
 
     /** 获取当前主题变量 */
     function getTheme() {
         return isDarkMode() ? 'dark' : 'light';
+    }
+
+    /** 切换评论抽屉的主题（与主抽屉共享 localStorage + dark-mode 类） */
+    function toggleCommentTheme() {
+        var wrap = document.getElementById('dy-drawer-wrap');
+        if (!wrap) return;
+        var isDark = wrap.classList.contains('dark-mode');
+        if (isDark) {
+            wrap.classList.remove('dark-mode');
+            localStorage.setItem('hankin-dy-drawer-theme', 'light');
+        } else {
+            wrap.classList.add('dark-mode');
+            localStorage.setItem('hankin-dy-drawer-theme', 'dark');
+        }
+        syncCommentThemeButton();
+        // 同步主抽屉的 theme button（如果存在）
+        var mainBtn = document.getElementById('themeToggleBtn');
+        if (mainBtn) {
+            var newDark = wrap.classList.contains('dark-mode');
+            mainBtn.innerHTML = newDark
+                ? '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.636l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.636l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>\u6d45\u8272\u6a21\u5f0f'
+                : '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>\u6df1\u8272\u6a21\u5f0f';
+        }
+    }
+
+    /** 同步评论抽屉主题按钮的图标和文字 */
+    function syncCommentThemeButton() {
+        var btn = document.getElementById('cmt-btn-theme');
+        if (!btn) return;
+        var dark = isDarkMode();
+        btn.innerHTML = dark
+            ? '<svg class="cmt-theme-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.636l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.636l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>\u6d45\u8272\u6a21\u5f0f'
+            : '<svg class="cmt-theme-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>\u6df1\u8272\u6a21\u5f0f';
     }
 
     // ============================================================
@@ -125,21 +159,26 @@
     function injectStyles() {
         if (document.getElementById('dy-comment-module-styles')) return;
         const css = /* css */ `
-/* ====== 评论弹窗 ====== */
+/* ====== 评论抽屉 ====== */
+/* 遮罩层 */
 .comment-modal-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200002;
-    display: none; align-items: center; justify-content: center;
-    backdrop-filter: blur(4px);
+    position: fixed; inset: 0; background: rgba(0,0,0,0.25); z-index: 200002;
+    display: block; opacity: 0; pointer-events: none;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    transition: opacity 0.35s ease;
 }
-.comment-modal-overlay.show { display: flex; }
+.comment-modal-overlay.show { opacity: 1; pointer-events: auto; }
 
+/* 抽屉面板 — 从右侧滑入 */
 .comment-modal-panel {
-    background: #fff; border-radius: 14px; box-shadow: 0 12px 56px rgba(0,0,0,0.2);
-    width: 92vw; max-width: 1400px; height: 88vh; display: flex; flex-direction: column;
-    overflow: hidden; animation: commentFadeIn 0.2s ease;
+    position: fixed; right: -65vw; top: 0; width: 65vw; height: 100vh; z-index: 200003;
+    background: #fff; box-shadow: -4px 0 24px rgba(0,0,0,0.12);
+    display: flex; flex-direction: column; overflow: hidden;
+    transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 12px 0 0 12px;
 }
-#dy-drawer-wrap.dark-mode .comment-modal-panel { background: #2d2d2d; }
-@keyframes commentFadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+.comment-modal-overlay.show ~ .comment-modal-panel { right: 0; }
+#dy-drawer-wrap.dark-mode .comment-modal-panel { background: #1a1a1a; }
 
 /* 顶部栏 */
 .comment-modal-header {
@@ -238,6 +277,8 @@
     vertical-align: top; word-break: break-word;
 }
 #dy-drawer-wrap.dark-mode .comment-table tbody td { color: #e5e5e5; border-color: #3a3a3a; }
+#dy-drawer-wrap.dark-mode .comment-table tbody td[style*="color:#666"] { color: #aaa !important; }
+#dy-drawer-wrap.dark-mode .comment-table tbody td[style*="color:#999"] { color: #777 !important; }
 .comment-table tbody tr:hover { background: #fafbff; }
 #dy-drawer-wrap.dark-mode .comment-table tbody tr:hover { background: #333; }
 .comment-table tbody tr.row-reply { background: #fafafa; }
@@ -248,10 +289,10 @@
     display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px;
     border-radius: 4px; font-size: 11px; font-weight: 600; white-space: nowrap;
 }
-.cmt-type-tag.comment { background: #eff6ff; color: #2563eb; }
-.cmt-type-tag.reply { background: #fff7ed; color: #ea580c; }
-#dy-drawer-wrap.dark-mode .cmt-type-tag.comment { background: #1e3a5f; color: #60a5fa; }
-#dy-drawer-wrap.dark-mode .cmt-type-tag.reply { background: #442a10; color: #fb923c; }
+.cmt-type-tag.comment { background: #2d3d4d29; color: #4ade80; }
+.cmt-type-tag.reply { background: #2d3d4d29; color: #4fa3ff; }
+#dy-drawer-wrap.dark-mode .cmt-type-tag.comment { background: #1a3d2d; color: #4ade80; }
+#dy-drawer-wrap.dark-mode .cmt-type-tag.reply { background: #2d3d4d; color: #4fa3ff; }
 
 /* 所属评论列折叠按钮 */
 .cmt-parent-toggle { cursor: pointer; color: #999; font-size: 11px; transition: color 0.15s; margin-left: 4px; }
@@ -305,22 +346,28 @@
     function injectModalDOM() {
         if (document.getElementById('dy-comment-modal')) return;
         const html = /* html */ `
-<div class="comment-modal-overlay" id="dy-comment-modal-overlay">
-    <div class="comment-modal-panel" id="dy-comment-modal">
+<div class="comment-modal-overlay" id="dy-comment-modal-overlay"></div>
+<div class="comment-modal-panel" id="dy-comment-modal">
         <!-- 顶部栏 -->
         <div class="comment-modal-header">
             <div class="comment-modal-title">
-                💬 评论数据
+                评论数据
                 <span class="aweme-desc" id="cmt-aweme-desc"></span>
             </div>
             <div class="comment-modal-header-btns">
-                <button class="comment-modal-header-btn" id="cmt-btn-reload" title="重新解析">🔄 重新解析</button>
+                <button class="comment-modal-header-btn" id="cmt-btn-theme" title="切换深色/浅色模式">
+                    <svg class="cmt-theme-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                    </svg>
+                    深色模式
+                </button>
+                <button class="comment-modal-header-btn" id="cmt-btn-reload" title="重新解析">重新解析</button>
                 <div style="position:relative;">
-                    <button class="comment-modal-header-btn" id="cmt-btn-export" title="导出数据">⬇ 导出 ▾</button>
+                    <button class="comment-modal-header-btn" id="cmt-btn-export" title="导出数据">导出 ▾</button>
                     <div class="cmt-export-menu" id="cmt-export-menu">
-                        <div class="cmt-export-menu-item" data-format="json">📄 导出 JSON</div>
-                        <div class="cmt-export-menu-item" data-format="csv">📊 导出 CSV</div>
-                        <div class="cmt-export-menu-item" data-format="txt">📝 导出 TXT</div>
+                        <div class="cmt-export-menu-item" data-format="json">导出 JSON</div>
+                        <div class="cmt-export-menu-item" data-format="csv">导出 CSV</div>
+                        <div class="cmt-export-menu-item" data-format="txt">导出 TXT</div>
                     </div>
                 </div>
                 <button class="comment-modal-close" id="cmt-btn-close" title="关闭">✕</button>
@@ -329,7 +376,7 @@
         <!-- 统计栏 -->
         <div class="comment-modal-stats" id="cmt-stats-bar" style="display:none;">
             <div class="stats-left">
-                <span id="cmt-stats-total">📊 共加载 0 条</span>
+                <span id="cmt-stats-total">共加载 0 条</span>
                 <span id="cmt-stats-breakdown" style="color:#999;"></span>
             </div>
             <span class="stats-warn" id="cmt-stats-warn" style="display:none;"></span>
@@ -356,13 +403,17 @@
                 <thead>
                     <tr>
                         <th style="width:50px;text-align:center;">#</th>
+                        <th style="width:130px;">评论ID</th>
                         <th style="width:72px;">类型</th>
                         <th style="width:200px;" data-col="parent" id="cmt-col-parent">
                             所属评论 <span class="cmt-parent-toggle" id="cmt-parent-toggle" title="折叠/展开此列">◀</span>
                         </th>
                         <th>评论内容</th>
                         <th style="width:120px;">昵称</th>
-                        <th style="width:72px;text-align:center;">👍点赞</th>
+                        <th style="width:72px;text-align:center;cursor:pointer;user-select:none;" 
+                            class="sortable" id="cmt-sort-digg" data-sort="digg_count">
+                            点赞 <span class="sort-arrow">▲</span>
+                        </th>
                         <th style="width:160px;text-align:center;cursor:pointer;user-select:none;" 
                             class="sortable" id="cmt-sort-time" data-sort="create_time">
                             时间 <span class="sort-arrow">▲</span>
@@ -389,9 +440,11 @@
     </div>
 </div>
 `;
+        const container = document.getElementById('dy-drawer-wrap') || document.body;
         const el = document.createElement('div');
         el.innerHTML = html;
-        document.body.appendChild(el.firstElementChild);
+        container.appendChild(el.firstElementChild); // 遮罩层
+        container.appendChild(el.firstElementChild); // 抽屉面板
     }
 
     function ensureDOM() {
@@ -403,328 +456,44 @@
     }
 
     // ============================================================
-    //  4. API 层
+    //  4. API 层（极简参数，模拟用户浏览行为）
     // ============================================================
 
-    // ---- 4a. 从页面提取反爬 token ----
-    let _cachedTokens = null;
-    function getPageTokens() {
-        if (_cachedTokens) return _cachedTokens;
-        const tokens = { msToken: '', webid: '', verifyFp: '', fp: '', uifid: '' };
-
-        // ① 从 cookie 提取 msToken
-        document.cookie.split(';').forEach(c => {
-            const [k, v] = c.trim().split('=');
-            if (!k) return;
-            if (k === 'msToken') tokens.msToken = v;
-            if (k === 's_v_web_id') tokens.webid = v;
-        });
-
-        // ② 从 localStorage 兜底
-        try {
-            if (!tokens.msToken) {
-                const xmst = localStorage.getItem('xmst');
-                if (xmst) tokens.msToken = xmst;
-            }
-            if (!tokens.msToken) {
-                // 有些页面把它存在 window
-                if (typeof window._msToken !== 'undefined') tokens.msToken = window._msToken;
-            }
-            if (!tokens.webid) {
-                const wid = localStorage.getItem('webid') || localStorage.getItem('s_v_web_id');
-                if (wid) tokens.webid = wid;
-            }
-            // verifyFp
-            const vfp = localStorage.getItem('verifyFp') || localStorage.getItem('verify_fp');
-            if (vfp) tokens.verifyFp = tokens.fp = vfp;
-            // uifid - try finding it
-            const uifid = localStorage.getItem('uifid');
-            if (uifid) tokens.uifid = uifid;
-            // Some newer Douyin versions store these differently
-            if (!tokens.msToken) {
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    if (key && key.includes('msToken')) {
-                        tokens.msToken = localStorage.getItem(key);
-                        break;
-                    }
-                }
-            }
-        } catch (e) { /* localStorage 不可用 */ }
-
-        // ③ 从页面 script 标签提取 msToken
-        if (!tokens.msToken) {
-            try {
-                const scripts = document.querySelectorAll('script');
-                for (const s of scripts) {
-                    const m = s.textContent && s.textContent.match(/"msToken"\s*:\s*"([^"]+)"/);
-                    if (m) { tokens.msToken = m[1]; break; }
-                }
-            } catch (e) {}
-        }
-
-        _cachedTokens = tokens;
-        console.log('[评论模块] 提取的页面 token:', {
-            msToken: tokens.msToken ? tokens.msToken.substring(0, 20) + '...' : '(无)',
-            webid: tokens.webid ? tokens.webid.substring(0, 20) + '...' : '(无)',
-            verifyFp: tokens.verifyFp ? '有' : '(无)',
-            uifid: tokens.uifid ? tokens.uifid.substring(0, 20) + '...' : '(无)'
-        });
-        return tokens;
-    }
-
     /**
-     * 清除 token 缓存（重新解析时调用）
+     * 构建评论 API URL（只加必要参数，不加任何签名/逆向参数）
      */
-    function clearTokenCache() {
-        _cachedTokens = null;
-    }
-
-    // ---- 4b. X-Bogus 签名生成 ----
-    /**
-     * 生成 a_bogus 参数值
-     * 基于抖音 PC Web 的 X-Bogus 签名算法
-     */
-    function generateABogus(paramsStr, userAgent) {
-        // X-Bogus 编码表（抖音 PC Web 使用的变体）
-        var _0x2b7e = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191];
-        var _0x3d2f = 'Dkdpgh4ZKsQB80/Mfvw36XI1R25-WUAlEi7NLboqYTOPuzmFjJnryx9HVGcaStCe';
-        var _0x4e8a = [19, 39, 0, 0, 29, 51, 0, 0, 21, 53, 0, 0, 24, 46, 0, 0, 32, 36, 0, 0, 9, 62, 0, 0, 15, 37, 0, 0, 28, 48, 0, 0, 31, 44, 0, 0, 3, 57, 0, 0, 7, 40, 0, 0, 30, 47, 0, 0, 8, 61, 0, 0, 12, 55, 0, 0, 1, 56, 0, 0, 18, 39, 0, 0, 22, 52, 0, 0, 33, 35, 0, 0, 34, 53, 0, 0, 6, 58, 0, 0, 10, 63, 0, 0, 17, 40, 0, 0, 5, 59, 0, 0, 25, 46, 0, 0, 23, 52, 0, 0, 26, 44, 0, 0, 20, 50, 0, 0, 14, 38, 0, 0, 16, 43, 0, 0, 0, 62, 0, 0, 2, 63, 0, 0, 27, 43, 0, 0, 13, 35, 0, 0, 11, 36, 0, 0, 4, 59, 0, 0];
-
-        function _0x5a7c(arr, num) {
-            var result = 0;
-            for (var i = 0; i < num; i++) {
-                result |= arr[i] << (8 * i);
-            }
-            return result;
-        }
-
-        function _0x6b8d(str) {
-            var arr = [];
-            for (var i = 0; i < str.length; i++) {
-                var c = str.charCodeAt(i);
-                if (c < 128) {
-                    arr.push(c);
-                } else if (c < 2048) {
-                    arr.push(192 | (c >> 6));
-                    arr.push(128 | (c & 63));
-                } else {
-                    arr.push(224 | (c >> 12));
-                    arr.push(128 | ((c >> 6) & 63));
-                    arr.push(128 | (c & 63));
-                }
-            }
-            return arr;
-        }
-
-        function _0x7c9e(arr, table) {
-            var result = [];
-            for (var i = 0; i < arr.length; i++) {
-                var idx = arr[i];
-                if (idx < 0 || idx >= table.length) continue;
-                result.push(table[idx]);
-            }
-            return result;
-        }
-
-        function _0x8daf(chars) {
-            var result = [];
-            for (var i = 0; i < chars.length; i += 3) {
-                var c1 = chars[i] || 0;
-                var c2 = chars[i + 1] || 0;
-                var c3 = chars[i + 2] || 0;
-                result.push(c1 >> 2);
-                result.push(((c1 & 3) << 4) | (c2 >> 4));
-                result.push(((c2 & 15) << 2) | (c3 >> 6));
-                result.push(c3 & 63);
-            }
-            return result;
-        }
-
-        function _0x9eba(arr) {
-            var result = 0;
-            for (var i = 0; i < arr.length; i++) {
-                result = (result << 8) + arr[i];
-                result = result >>> 0;
-            }
-            return result;
-        }
-
-        function _0xaecb(num) {
-            var result = [];
-            for (var i = 0; i < 4; i++) {
-                result.push((num >> (8 * i)) & 255);
-            }
-            return result;
-        }
-
-        // CRC32 计算
-        function crc32(str) {
-            var table = [];
-            for (var n = 0; n < 256; n++) {
-                var c = n;
-                for (var k = 0; k < 8; k++) {
-                    c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
-                }
-                table[n] = c;
-            }
-            var crc = 0xFFFFFFFF;
-            var bytes = _0x6b8d(str);
-            for (var i = 0; i < bytes.length; i++) {
-                crc = table[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
-            }
-            return (crc ^ 0xFFFFFFFF) >>> 0;
-        }
-
-        // MD5 hash helper (simplified implementation for X-Bogus)
-        function md5Hash(str) {
-            // 使用已知的 MD5 值作为种子 — 实际算法更复杂，
-            // 这里用 CRC32 的变体来近似签名
-            var bytes = _0x6b8d(str);
-            var hash = bytes.reduce(function(a, b) {
-                return ((a << 5) - a + b) | 0;
-            }, 0);
-            return Math.abs(hash);
-        }
-
-        // 获取时间戳
-        var timestamp = Math.floor(Date.now() / 1000);
-
-        // 构造签名字符串
-        var signStr = paramsStr;
-        var crc = crc32(signStr);
-        var crcBytes = _0xaecb(crc);
-
-        // 生成随机偏移
-        var salt = timestamp % 256;
-
-        // 编码过程
-        var input = [];
-        input.push(salt);
-        for (var i = 0; i < crcBytes.length; i++) {
-            input.push(crcBytes[i] ^ (salt + i + 7));
-        }
-
-        // 使用编码表进行转换
-        var encoded = _0x8daf(input);
-        var result = _0x7c9e(encoded, _0x3d2f).join('');
-
-        // 生成最终 a_bogus 值
-        var uaBytes = _0x6b8d(userAgent || navigator.userAgent);
-        var uaHash = uaBytes.reduce(function(a, b) { return (a + b) & 0xFF; }, 0);
-
-        // 组合: 随机前缀 + 时间戳编码 + CRC编码 + 结果
-        var prefix = _0x3d2f[timestamp % 64] + _0x3d2f[uaHash % 64];
-        var abogus = prefix + result;
-
-        return abogus;
-    }
-
-    // ---- 4c. 构建带签名的评论 API URL ----
-    function buildCommentUrl(apiPath, extraParams) {
+    function buildApiUrl(apiPath, awemeId, extraParams) {
         var url = new URL(CONFIG.BASE_HOST + apiPath);
-        var tokens = getPageTokens();
-        var ua = navigator.userAgent;
-
-        // 基础参数（用户原始 URL 中的关键参数）
-        var baseParams = {
-            'device_platform': 'webapp',
-            'aid': '6383',
-            'channel': 'channel_pc_web',
-            'item_type': '0',
-            'update_version_code': '170400',
-            'pc_client_type': '1',
-            'pc_libra_divert': 'Mac',
-            'support_h265': '1',
-            'support_dash': '1',
-            'cpu_core_num': '4',
-            'version_code': '170400',
-            'version_name': '17.4.0',
-            'cookie_enabled': 'true',
-            'screen_width': String(screen.width),
-            'screen_height': String(screen.height),
-            'browser_language': navigator.language,
-            'browser_platform': navigator.platform,
-            'browser_name': 'Chrome',
-            'browser_version': (navigator.userAgent.match(/Chrome\/(\d+)/) || [0, '149'])[1],
-            'browser_online': String(navigator.onLine),
-            'os_name': (navigator.userAgent.indexOf('Mac') > -1 ? 'Mac OS' : 'Windows'),
-            'os_version': '10.15.7',
-            'platform': 'PC',
-            'downlink': '10',
-            'effective_type': '4g',
-            'round_trip_time': '250',
-        };
-
-        // 合并基础参数
-        for (var k in baseParams) {
-            if (baseParams.hasOwnProperty(k)) {
-                url.searchParams.set(k, baseParams[k]);
-            }
-        }
-
-        // 合并额外参数
+        url.searchParams.set('aweme_id', String(awemeId));
+        url.searchParams.set('device_platform', 'webapp');
+        url.searchParams.set('aid', '6383');
+        // 额外参数
         for (var k in extraParams) {
             if (extraParams.hasOwnProperty(k)) {
-                url.searchParams.set(k, extraParams[k]);
+                url.searchParams.set(k, String(extraParams[k]));
             }
         }
-
-        // 添加 webid
-        if (tokens.webid) {
-            url.searchParams.set('webid', tokens.webid);
-        }
-
-        // 添加 uifid
-        if (tokens.uifid) {
-            url.searchParams.set('uifid', tokens.uifid);
-        }
-
-        // 添加 verifyFp / fp
-        if (tokens.verifyFp) {
-            url.searchParams.set('verifyFp', tokens.verifyFp);
-            url.searchParams.set('fp', tokens.verifyFp);
-        }
-
-        // 添加 msToken
-        if (tokens.msToken) {
-            url.searchParams.set('msToken', tokens.msToken);
-        }
-
-        // 获取参数串（按字母排序）用于签名
-        var sortedParams = [];
-        url.searchParams.forEach(function(v, k) {
-            sortedParams.push(k + '=' + encodeURIComponent(v));
-        });
-        sortedParams.sort();
-
-        // 生成 a_bogus
-        var paramsStr = sortedParams.join('&');
-        var abogus = generateABogus(paramsStr, ua);
-        url.searchParams.set('a_bogus', abogus);
-
-        console.log('[评论模块] 已签名 URL，a_bogus=' + abogus.substring(0, 20) + '... msToken=' + (tokens.msToken ? '有' : '无') + ' webid=' + (tokens.webid ? '有' : '无'));
-
-        return url;
+        return url.toString();
     }
 
     /**
-     * 带重试的 fetch 封装
+     * 带重试的 fetch
      */
-    async function fetchWithRetry(url, options, retries) {
+    async function fetchWithRetry(url, retries) {
         retries = retries !== undefined ? retries : CONFIG.MAX_RETRIES;
         for (var attempt = 0; attempt <= retries; attempt++) {
             try {
-                var res = await fetch(url, options);
+                var res = await fetch(url, {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: {
+                        Referer: CONFIG.BASE_HOST + '/video/' + STATE.itemId,
+                        'User-Agent': navigator.userAgent
+                    }
+                });
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 var json = await res.json();
                 if (json.status_code !== 0) {
-                    console.error('[评论模块] API 返回异常:', {
-                        url: url.toString(),
-                        status_code: json.status_code,
-                        status_msg: json.status_msg || '(空)',
-                        full_response_keys: Object.keys(json)
-                    });
                     throw new Error(json.status_msg || 'API error (status_code=' + json.status_code + ')');
                 }
                 return json;
@@ -740,60 +509,40 @@
     }
 
     /**
-     * 拉取一页评论
+     * 拉取一页评论（单次 API 调用）
      */
-    async function fetchCommentPage(itemId, cursor) {
-        var url = buildCommentUrl(CONFIG.COMMENT_API, {
-            'item_id': String(itemId),
-            'cursor': String(cursor),
+    async function fetchCommentPage(awemeId, cursor) {
+        var url = buildApiUrl(CONFIG.COMMENT_API, awemeId, {
+            'cursor': String(cursor || 0),
             'count': '20'
         });
-
-        return await fetchWithRetry(url.toString(), {
-            method: 'GET',
-            credentials: 'include',
-            headers: {
-                Referer: CONFIG.BASE_HOST + '/video/' + itemId,
-                Origin: CONFIG.BASE_HOST,
-                'User-Agent': navigator.userAgent
-            }
-        });
+        console.log('[评论模块] 评论 API: ' + url);
+        return await fetchWithRetry(url, 0);
     }
 
     /**
      * 拉取某条评论的全部回复（支持翻页）
      */
-    async function fetchAllReplies(itemId, commentId) {
+    async function fetchAllReplies(awemeId, commentId) {
         var replies = [];
         var cursor = 0;
-        var maxPages = 10; // 每条评论最多翻10页回复
+        var maxPages = 10;
         var pageNum = 0;
         while (true) {
             if (STATE.loadingCancelled || pageNum >= maxPages) break;
             pageNum++;
-            var url = buildCommentUrl(CONFIG.REPLY_API, {
-                'item_id': String(itemId),
+            var url = buildApiUrl(CONFIG.REPLY_API, awemeId, {
                 'comment_id': String(commentId),
                 'cursor': String(cursor),
-                'count': '20',
-                'cut_version': '1'
+                'count': '10'
             });
-
             try {
-                var res = await fetchWithRetry(url.toString(), {
-                    method: 'GET',
-                    credentials: 'include',
-                    headers: {
-                        Referer: CONFIG.BASE_HOST + '/video/' + itemId,
-                        Origin: CONFIG.BASE_HOST,
-                        'User-Agent': navigator.userAgent
-                    }
-                });
+                var res = await fetchWithRetry(url, 0);
                 var list = res.comments || [];
                 replies.push.apply(replies, list);
                 if (!res.has_more || res.cursor === 0 || res.cursor === cursor) break;
                 cursor = res.cursor;
-                await sleep(CONFIG.REQUEST_DELAY * 0.5);
+                await sleep(600);
             } catch (err) {
                 console.warn('[评论模块] 拉取评论 ' + commentId + ' 的回复失败:', err.message);
                 break;
@@ -803,21 +552,59 @@
     }
 
     // ============================================================
-    //  5. 数据加载
+    //  5. 数据加载（含 localStorage 缓存）
     // ============================================================
+
+    /** localStorage 缓存 key */
+    function getCacheKey(awemeId) {
+        return 'hankin_dy_comment_cache_' + awemeId;
+    }
+
+    /** 从 localStorage 读取缓存 */
+    function loadFromLocalStorage(awemeId) {
+        try {
+            var raw = localStorage.getItem(getCacheKey(awemeId));
+            if (!raw) return null;
+            return JSON.parse(raw);
+        } catch (e) {
+            return null;
+        }
+    }
+
+    /** 写入 localStorage 缓存 */
+    function saveToLocalStorage(awemeId, data) {
+        try {
+            // 限制缓存体积：如果数据太大就只存前500条
+            var toSave = data;
+            if (toSave.rows && toSave.rows.length > 500) {
+                toSave = {
+                    rows: data.rows.slice(0, 500),
+                    loadedAt: data.loadedAt,
+                    reachedLimit: true,
+                    _truncated: true,
+                    _total: data.rows.length
+                };
+            }
+            localStorage.setItem(getCacheKey(awemeId), JSON.stringify(toSave));
+            console.log('[评论模块] 缓存已写入 localStorage: ' + toSave.rows.length + ' 条');
+        } catch (e) {
+            console.warn('[评论模块] localStorage 缓存写入失败:', e.message);
+        }
+    }
 
     /**
      * 主加载流程：拉取评论 + 回复，扁平化合并
      */
     async function loadComments(item) {
-        const itemId = item.aweme_id;
-        const totalEstimate = Number(item.statistics?.comment_count) || 0;
+        var itemId = item.aweme_id;
+        var totalEstimate = Number(item.statistics?.comment_count) || 0;
 
-        // 检查缓存
-        const cached = STATE.cache[itemId];
-        if (cached) {
-            STATE.allRows = [...cached.rows];
-            STATE.reachedLimit = cached.reachedLimit;
+        // ① 先查 localStorage 缓存
+        var localCached = loadFromLocalStorage(itemId);
+        if (localCached && localCached.rows && localCached.rows.length > 0) {
+            console.log('[评论模块] 从 localStorage 缓存加载: ' + localCached.rows.length + ' 条');
+            STATE.allRows = localCached.rows;
+            STATE.reachedLimit = !!localCached.reachedLimit;
             STATE.itemId = itemId;
             STATE.itemDesc = item.desc || '';
             STATE.itemCommentTotal = totalEstimate;
@@ -826,7 +613,20 @@
             return;
         }
 
-        // 开始新加载
+        // ② 再查内存缓存
+        var memCached = STATE.cache[itemId];
+        if (memCached) {
+            STATE.allRows = [...memCached.rows];
+            STATE.reachedLimit = memCached.reachedLimit;
+            STATE.itemId = itemId;
+            STATE.itemDesc = item.desc || '';
+            STATE.itemCommentTotal = totalEstimate;
+            STATE.currentPage = 1;
+            renderAfterLoad();
+            return;
+        }
+
+        // ③ 开始网络拉取
         STATE.isLoading = true;
         STATE.loadingCancelled = false;
         STATE.progress = 0;
@@ -846,9 +646,9 @@
         showFooter(false);
         updateStats();
 
-        const allRows = [];
-        let cursor = 0;
-        let commentCount = 0;
+        var allRows = [];
+        var cursor = 0;
+        var commentPageNum = 0;
 
         try {
             while (true) {
@@ -858,11 +658,11 @@
                 }
                 if (allRows.length >= CONFIG.MAX_ROWS) {
                     STATE.reachedLimit = true;
-                    console.log(`[评论模块] 已达拉取上限 ${CONFIG.MAX_ROWS} 条`);
+                    console.log('[评论模块] 已达拉取上限 ' + CONFIG.MAX_ROWS + ' 条');
                     break;
                 }
 
-                let pageData;
+                var pageData;
                 try {
                     pageData = await fetchCommentPage(itemId, cursor);
                 } catch (err) {
@@ -870,12 +670,13 @@
                     break;
                 }
 
-                const comments = pageData.comments || [];
+                var comments = pageData.comments || [];
                 if (!comments.length) break;
 
-                commentCount++;
+                commentPageNum++;
 
-                for (const cmt of comments) {
+                for (var ci = 0; ci < comments.length; ci++) {
+                    var cmt = comments[ci];
                     if (allRows.length >= CONFIG.MAX_ROWS) { STATE.reachedLimit = true; break; }
 
                     // 添加评论行
@@ -892,18 +693,19 @@
                         reply_total: Number(cmt.reply_comment_total || 0)
                     });
 
-                    // 更新进度：评论阶段
-                    updateProgressUI(allRows.length, Math.max(totalEstimate, 1), `拉取评论中... (第 ${commentCount} 页)`);
+                    updateProgressUI(allRows.length, Math.max(totalEstimate, 1),
+                        '拉取评论 (' + commentPageNum + '页)');
 
                     // 如果有回复，拉取
                     if (cmt.reply_comment_total > 0 && !STATE.loadingCancelled) {
-                        const replyTotal = cmt.reply_comment_total;
-                        const parentText = ((cmt.text || '').replace(/\n/g, ' ')).substring(0, 30) + ((cmt.text || '').length > 30 ? '...' : '');
-                        updateProgressUI(allRows.length, Math.max(totalEstimate, 1), `拉取评论回复中... 原评论: "${parentText}"`);
+                        var parentText = ((cmt.text || '').replace(/\n/g, ' ')).substring(0, 25);
+                        updateProgressUI(allRows.length, Math.max(totalEstimate, 1),
+                            '拉取回复... (' + (parentText || '(空)') + ')');
                         await sleep(CONFIG.REQUEST_DELAY);
 
-                        const replies = await fetchAllReplies(itemId, cmt.cid);
-                        for (const rpy of replies) {
+                        var replies = await fetchAllReplies(itemId, cmt.cid);
+                        for (var ri = 0; ri < replies.length; ri++) {
+                            var rpy = replies[ri];
                             if (allRows.length >= CONFIG.MAX_ROWS) { STATE.reachedLimit = true; break; }
                             allRows.push({
                                 type: '回复',
@@ -927,9 +729,8 @@
                 if (!pageData.has_more || pageData.cursor === 0) break;
 
                 cursor = pageData.cursor;
-                if (commentCount > 0 && commentCount % 2 === 0) {
-                    await sleep(CONFIG.REQUEST_DELAY);
-                }
+                console.log('[评论模块] 已拉取 ' + allRows.length + ' 条，继续下一页 cursor=' + cursor);
+                await sleep(1000);
             }
         } catch (err) {
             console.error('[评论模块] 加载评论出错:', err);
@@ -939,21 +740,26 @@
         STATE.loadingCancelled = false;
 
         // 设置序号
-        allRows.forEach((r, i) => { r._rowIndex = i + 1; });
+        allRows.forEach(function(r, i) { r._rowIndex = i + 1; });
         STATE.allRows = allRows;
 
-        // 写入缓存
+        // 写入缓存（内存 + localStorage）
         STATE.cache[itemId] = {
-            rows: [...allRows],
+            rows: allRows.slice(),
             loadedAt: Date.now(),
             reachedLimit: STATE.reachedLimit
         };
+        saveToLocalStorage(itemId, {
+            rows: allRows,
+            loadedAt: Date.now(),
+            reachedLimit: STATE.reachedLimit
+        });
 
         renderAfterLoad();
     }
 
     function updateProgressUI(loaded, total, text) {
-        STATE.progress = Math.min(Math.round((loaded / Math.min(total, CONFIG.MAX_ROWS)) * 100), 99);
+        STATE.progress = Math.min(Math.round((loaded / Math.min(total || 1, CONFIG.MAX_ROWS)) * 100), 99);
         STATE.progressText = text;
         renderProgress();
     }
@@ -983,9 +789,9 @@
     /** 获取当前排序后的分页数据 */
     function getSortedRows() {
         let rows = [...STATE.allRows];
-        if (STATE.sortField === 'create_time') {
+        if (STATE.sortField === 'create_time' || STATE.sortField === 'digg_count') {
             rows.sort((a, b) => {
-                const diff = a.create_time - b.create_time;
+                const diff = (a[STATE.sortField] || 0) - (b[STATE.sortField] || 0);
                 return STATE.sortOrder === 'asc' ? diff : -diff;
             });
             rows.forEach((r, i) => { r._rowIndex = i + 1; });
@@ -1011,7 +817,8 @@
             tr.className = isReply ? 'row-reply' : '';
             tr.innerHTML = `
                 <td style="text-align:center;color:#999;font-size:12px;">${r._rowIndex}</td>
-                <td><span class="cmt-type-tag ${isReply ? 'reply' : 'comment'}">${isReply ? '↩ 回复' : '🟦 评论'}</span></td>
+                <td style="font-size:12px;color:#666;font-family:monospace;">${r.cid}</td>
+                <td><span class="cmt-type-tag ${isReply ? 'reply' : 'comment'}">${isReply ? '回复' : '评论'}</span></td>
                 <td data-col="parent" style="font-size:12px;color:#999;${STATE.parentColumnVisible ? '' : 'display:none;'}">${r.parent_text || '-'}</td>
                 <td style="line-height:1.6;">${escapeHtml(r.text)}</td>
                 <td style="color:#666;font-size:12px;">${escapeHtml(r.nickname)}</td>
@@ -1044,30 +851,37 @@
         const replyRows = STATE.allRows.filter(r => r.type === '回复').length;
         const actualTotal = STATE.itemCommentTotal;
 
-        document.getElementById('cmt-stats-total').innerHTML = `📊 共加载 ${formatNumber(total)} 条`;
+        document.getElementById('cmt-stats-total').innerHTML = `共加载 ${formatNumber(total)} 条`;
         document.getElementById('cmt-stats-breakdown').textContent = `评论 ${formatNumber(commentRows)} / 回复 ${formatNumber(replyRows)}`;
 
         const warnEl = document.getElementById('cmt-stats-warn');
         if (STATE.reachedLimit || (total < actualTotal && total >= CONFIG.MAX_ROWS)) {
             warnEl.style.display = 'flex';
-            warnEl.innerHTML = `⚠️ 实际评论数 ${formatNumber(actualTotal)}，已达拉取上限（${CONFIG.MAX_ROWS}条），可修改上限后重新解析`;
+            warnEl.innerHTML = `实际评论数 ${formatNumber(actualTotal)}，已达拉取上限（${CONFIG.MAX_ROWS}条），可修改上限后重新解析`;
         } else if (total < actualTotal && total < CONFIG.MAX_ROWS) {
             warnEl.style.display = 'flex';
-            warnEl.innerHTML = `⚠️ 实际评论 ${formatNumber(actualTotal)} 条，已加载 ${formatNumber(total)} 条（部分评论可能被删除或无法访问）`;
+            warnEl.innerHTML = `实际评论 ${formatNumber(actualTotal)} 条，已加载 ${formatNumber(total)} 条（部分评论可能被删除或无法访问）`;
         } else {
             warnEl.style.display = 'none';
         }
     }
 
     function updateSortIndicator() {
-        const th = document.getElementById('cmt-sort-time');
-        const arrow = th.querySelector('.sort-arrow');
-        th.classList.toggle('sort-active', STATE.sortField === 'create_time');
-        if (STATE.sortField === 'create_time') {
-            arrow.textContent = STATE.sortOrder === 'asc' ? '▲' : '▼';
-        } else {
-            arrow.textContent = '▲';
-        }
+        // 更新所有可排序列的指示器状态
+        const sortableCols = [
+            { id: 'cmt-sort-time', field: 'create_time' },
+            { id: 'cmt-sort-digg', field: 'digg_count' }
+        ];
+        sortableCols.forEach(col => {
+            const th = document.getElementById(col.id);
+            if (!th) return;
+            const arrow = th.querySelector('.sort-arrow');
+            const isActive = STATE.sortField === col.field;
+            th.classList.toggle('sort-active', isActive);
+            if (arrow) {
+                arrow.textContent = isActive ? (STATE.sortOrder === 'asc' ? '▲' : '▼') : '▲';
+            }
+        });
     }
 
     function renderProgress() {
@@ -1130,17 +944,17 @@
     function exportCSV() {
         const rows = getExportRows();
         const BOM = '\uFEFF';
-        const header = '序号,类型,所属评论,评论内容,昵称,点赞,时间\n';
+        const header = '序号,评论ID,类型,所属评论,评论内容,昵称,点赞,时间\n';
         const body = rows.map(r => {
             const esc = (s) => '"' + String(s || '').replace(/"/g, '""') + '"';
-            return [r._rowIndex, r.type, r.parent_text || '', esc(r.text), esc(r.nickname), r.digg_count, r.create_time_str].join(',');
+            return [r._rowIndex, r.cid, r.type, r.parent_text || '', esc(r.text), esc(r.nickname), r.digg_count, r.create_time_str].join(',');
         }).join('\n');
         triggerDownload(BOM + header + body, `comments_${STATE.itemId}.csv`, 'text/csv;charset=utf-8');
     }
 
     function exportTXT() {
         const rows = getExportRows();
-        const lines = rows.map(r => `[${r.type}] ${r.nickname}：${r.text} (${r.create_time_str})`);
+        const lines = rows.map(r => `[${r.cid}] [${r.type}] ${r.nickname}：${r.text} (${r.create_time_str})`);
         triggerDownload(lines.join('\n'), `comments_${STATE.itemId}.txt`, 'text/plain;charset=utf-8');
     }
 
@@ -1175,7 +989,7 @@
         renderPageSizeSelect();
 
         // 作品标题
-        const desc = (item.desc || '').substring(0, 25) + ((item.desc || '').length > 25 ? '...' : '');
+        const desc = (item.desc || '').substring(0, 50) + ((item.desc || '').length > 50 ? '...' : '');
         document.getElementById('cmt-aweme-desc').textContent = '「' + (desc || '无标题') + '」';
 
         // 重置排序
@@ -1183,6 +997,9 @@
         STATE.sortOrder = 'asc';
 
         overlay.classList.add('show');
+
+        // 同步主题按钮
+        syncCommentThemeButton();
 
         // 开始加载
         loadComments(item);
@@ -1211,6 +1028,10 @@
         // 关闭按钮
         document.getElementById('cmt-btn-close').onclick = hideModal;
 
+        // 主题切换按钮
+        document.getElementById('cmt-btn-theme').onclick = toggleCommentTheme;
+        syncCommentThemeButton();
+
         // 点击遮罩关闭
         document.getElementById('dy-comment-modal-overlay').onclick = (e) => {
             if (e.target === e.currentTarget) hideModal();
@@ -1220,9 +1041,9 @@
         document.getElementById('cmt-btn-reload').onclick = () => {
             if (STATE.isLoading) return;
             if (STATE.itemId) {
-                // 清除缓存和 token 后重新加载
+                // 清除内存和 localStorage 缓存后重新加载
                 delete STATE.cache[STATE.itemId];
-                clearTokenCache();
+                try { localStorage.removeItem(getCacheKey(STATE.itemId)); } catch(e) {}
                 STATE.allRows = [];
                 showTable(false);
                 showEmpty(false);
@@ -1262,6 +1083,21 @@
             } else {
                 STATE.sortField = 'create_time';
                 STATE.sortOrder = 'asc';
+            }
+            STATE.currentPage = 1;
+            renderTableBody();
+            renderPagination();
+            updateSortIndicator();
+        };
+
+        // 点赞排序
+        document.getElementById('cmt-sort-digg').onclick = () => {
+            if (STATE.isLoading || STATE.allRows.length === 0) return;
+            if (STATE.sortField === 'digg_count') {
+                STATE.sortOrder = STATE.sortOrder === 'asc' ? 'desc' : 'asc';
+            } else {
+                STATE.sortField = 'digg_count';
+                STATE.sortOrder = 'desc'; // 默认降序（点赞最多排最前）
             }
             STATE.currentPage = 1;
             renderTableBody();
@@ -1368,8 +1204,16 @@
         close: hideModal,
         /** 清除所有缓存 */
         clearCache() {
+            // 清除所有 hankin_dy_comment_cache_ 前缀的 localStorage
+            try {
+                var keysToRemove = [];
+                for (var i = 0; i < localStorage.length; i++) {
+                    var k = localStorage.key(i);
+                    if (k && k.startsWith('hankin_dy_comment_cache_')) keysToRemove.push(k);
+                }
+                keysToRemove.forEach(function(k) { localStorage.removeItem(k); });
+            } catch(e) {}
             STATE.cache = {};
-            clearTokenCache();
         },
         /** 设置最大拉取条数 */
         setMaxRows(n) {
@@ -1382,7 +1226,7 @@
     console.log('[评论模块] dy_comment_module.js 已加载，使用 window.DyComment.open(item) 打开评论弹窗');
 
     } catch (initErr) {
-        console.error('[评论模块] ⚠️ 模块初始化异常，window.DyComment 将不可用:', initErr);
+        console.error('[评论模块] 模块初始化异常，window.DyComment 将不可用:', initErr);
         // 异常详情输出到控制台帮助排查
         console.error('[评论模块] 错误类型:', initErr.name);
         console.error('[评论模块] 错误消息:', initErr.message);

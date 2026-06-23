@@ -43,17 +43,17 @@
     let userProfile = null;                              // 用户信息对象（API 返回的 json.user）
     let allWorksList = [];                               // 全部拉取到的作品原始列表
     let filterWorks = [];                                // 搜索/排序后的作品列表（实际渲染源）
-    let pageSize = parseInt(localStorage.getItem('dy-page-size')) || 20; // 每页显示条数（可切换）
+    let pageSize = parseInt(localStorage.getItem('hankin-dy-page-size')) || 20; // 每页显示条数（可切换）
     let currentPage = 1;                                 // 当前页码
     let selectedIds = new Set();                         // 已选中的作品 aweme_id 集合
-    let currentView = localStorage.getItem('dy-drawer-view') || 'table'; // 当前视图：'table' | 'grid'
+    let currentView = localStorage.getItem('hankin-dy-drawer-view') || 'table'; // 当前视图：'table' | 'grid'
     let isLoading = false;                               // 是否正在加载数据
     let sortField = "create_time";                       // 当前排序字段
     let sortOrder = "desc";                              // 排序方向：'asc' | 'desc'
     let totalWorksExpected = 0;                          // 预期总作品数（用于进度条初始值）
 
     // 主题状态（从 localStorage 读取，默认浅色）
-    let isDarkMode = localStorage.getItem('dy-drawer-theme') === 'dark';
+    let isDarkMode = localStorage.getItem('hankin-dy-drawer-theme') === 'dark';
 
     // 列显示控制（type/author/tags 默认隐藏，需在列选项中勾选才可见）
     let columnVisibility = {
@@ -129,7 +129,7 @@
     function toggleTheme() {
         isDarkMode = !isDarkMode;
         applyTheme();
-        localStorage.setItem('dy-drawer-theme', isDarkMode ? 'dark' : 'light');
+        localStorage.setItem('hankin-dy-drawer-theme', isDarkMode ? 'dark' : 'light');
     }
 
     /**
@@ -1011,7 +1011,7 @@ to{transform:translateY(-4px)}
         // 每页条数切换
         document.getElementById("pageSizeSelect").onchange = function() {
             pageSize = parseInt(this.value);
-            localStorage.setItem('dy-page-size', pageSize);
+            localStorage.setItem('hankin-dy-page-size', pageSize);
             currentPage = 1;
             renderTable();
         };
@@ -1982,7 +1982,7 @@ to{transform:translateY(-4px)}
      */
     function switchView(view) {
         currentView = view;
-        localStorage.setItem('dy-drawer-view', view);
+        localStorage.setItem('hankin-dy-drawer-view', view);
         const wrap = document.getElementById('dy-drawer-wrap');
         const viewClasses = ['table-view', 'grid-view', 'dashboard-view', 'compare-view', 'timeline-view'];
         if (wrap) {
