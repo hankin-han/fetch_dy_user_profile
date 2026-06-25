@@ -415,36 +415,36 @@
 
 <table>
   <tr>
-    <td><img src="demo0.jpg" width="400" /></td>
-    <td><img src="demo1.jpg" width="400" /></td>
+    <td><img src="./img/demo0.wpbp" width="400" /></td>
+    <td><img src="./img/demo1.wpbp" width="400" /></td>
   </tr>
   <tr>
-    <td><img src="demo2.jpg" width="400" /></td>
-    <td><img src="demo3.jpg" width="400" /></td>
+    <td><img src="./img/demo2.wpbp" width="400" /></td>
+    <td><img src="./img/demo3.wpbp" width="400" /></td>
   </tr>
   <tr>
-    <td><img src="demo4.jpg" width="400" /></td>
-    <td><img src="demo5.jpg" width="400" /></td>
+    <td><img src="./img/demo4.wpbp" width="400" /></td>
+    <td><img src="./img/demo5.wpbp" width="400" /></td>
   </tr>
   <tr>
-    <td><img src="demo6.jpg" width="400" /></td>
-    <td><img src="demo7.jpg" width="400" /></td>
+    <td><img src="./img/demo6.wpbp" width="400" /></td>
+    <td><img src="./img/demo7.wpbp" width="400" /></td>
   </tr>
   <tr>
-    <td><img src="demo8.jpg" width="400" /></td>
-    <td><img src="demo9.jpg" width="400" /></td>
+    <td><img src="./img/demo8.wpbp" width="400" /></td>
+    <td><img src="./img/demo9.wpbp" width="400" /></td>
   </tr>
   <tr>
-    <td><img src="demo10.jpg" width="400" /></td>
-    <td><img src="demo11.jpg" width="400" /></td>
+    <td><img src="./img/demo10.wpbp" width="400" /></td>
+    <td><img src="./img/demo11.wpbp" width="400" /></td>
   </tr>
   <tr>
-    <td><img src="demo12.jpg" width="400" /></td>
-    <td><img src="demo13.jpg" width="400" /></td>
+    <td><img src="./img/demo12.wpbp" width="400" /></td>
+    <td><img src="./img/demo13.wpbp" width="400" /></td>
   </tr>
   <tr>
-    <td><img src="demo14.jpg" width="400" /></td>
-    <td><img src="demo15.jpg" width="400" /></td>
+    <td><img src="./img/demo14.wpbp" width="400" /></td>
+    <td><img src="./img/demo15.wpbp" width="400" /></td>
   </tr>
 </table>
 
